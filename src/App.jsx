@@ -216,6 +216,8 @@ const formatDate = (iso) => {
   return d.toLocaleDateString('pt-BR');
 };
 const todayISO = () => new Date().toISOString().slice(0, 10);
+const formatBRLPlain = (n) => 'R$ ' + (n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatKgPlain = (n) => (n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg';
 const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const findProduct = (codigo) => PRODUCTS.find(p => p.codigo === codigo);
@@ -329,12 +331,12 @@ const exportPedidoStyled = (pedido, cliente, vendedor) => {
   .section { background: #c8c8c8 !important; font-weight: bold; font-size: 11pt; padding: 6px 10px; text-align: left; letter-spacing: 0.5px; }
   .thead { background: #2a2a2a !important; color: #ffffff !important; font-weight: bold; text-align: center; padding: 6px 4px; font-size: 9.5pt; }
   .total-label { background: #2a2a2a !important; color: #ffffff !important; font-weight: bold; font-size: 12pt; text-align: right; padding: 8px; letter-spacing: 0.5px; }
-  .total-val { background: #2a2a2a !important; color: #ffffff !important; font-weight: bold; font-size: 12pt; text-align: right; padding: 8px; mso-number-format: '"R$ "#,##0.00'; }
+  .total-val { background: #2a2a2a !important; color: #ffffff !important; font-weight: bold; font-size: 12pt; text-align: right; padding: 8px; }
   .extra { background: #fff5cc !important; }
-  .money { mso-number-format: '"R$ "#,##0.00'; text-align: right; }
+  .money { text-align: right; }
   .pct { mso-number-format: '0.00\\%'; text-align: center; }
   .num { mso-number-format: '0'; text-align: center; }
-  .kg { mso-number-format: '0.000" kg"'; text-align: center; }
+  .kg { text-align: center; }
   .text { mso-number-format: '\\@'; text-align: center; font-family: 'Consolas', 'Courier New', monospace; font-size: 9.5pt; }
   .code { mso-number-format: '\\@'; text-align: center; font-family: 'Consolas', 'Courier New', monospace; font-size: 9.5pt; }
   .left { text-align: left; }
@@ -420,11 +422,11 @@ const exportPedidoStyled = (pedido, cliente, vendedor) => {
       const descVal = parseFloat(item.descPct) || 0;
       const nomeProduto = escapeHtml(p.nome) + (c.isKg ? ` <span style="font-size: 8pt; color: #555;">(${p.peso_kg.toString().replace('.', ',')} kg/cx)</span>` : '');
       const totalCell = c.isKg
-        ? `<td class="kg${cls}">${c.totalKg.toFixed(3)}</td>`
+        ? `<td class="kg${cls}">${formatKgPlain(c.totalKg)}</td>`
         : `<td class="num${cls}">${c.totalUn}</td>`;
       const vlUnitDisplay = c.isKg
-        ? `<td class="money${cls}">${c.vlUnit.toFixed(2)}<span style="font-size: 8pt;"> /kg</span></td>`
-        : `<td class="money${cls}">${c.vlUnit.toFixed(4)}</td>`;
+        ? `<td class="money${cls}">${formatBRLPlain(c.vlUnit)}<span style="font-size: 8pt;"> /kg</span></td>`
+        : `<td class="money${cls}">${formatBRLPlain(c.vlUnit)}</td>`;
       html += `<tr>
         <td class="code${cls}">${escapeHtml(p.sap || '-')}</td>
         <td class="code${cls}" style="font-weight: bold;">${escapeHtml(p.codigo)}</td>
@@ -436,7 +438,7 @@ const exportPedidoStyled = (pedido, cliente, vendedor) => {
         ${totalCell}
         ${vlUnitDisplay}
         <td class="num${cls}">${descVal > 0 ? descVal + '%' : '-'}</td>
-        <td class="money${cls}" style="font-weight: bold;">${c.vlTotal.toFixed(2)}</td>
+        <td class="money${cls}" style="font-weight: bold;">${formatBRLPlain(c.vlTotal)}</td>
       </tr>`;
     });
   });
@@ -444,12 +446,12 @@ const exportPedidoStyled = (pedido, cliente, vendedor) => {
   // Summary row
   html += `<tr><td colspan="11" style="border: none; height: 4pt;"></td></tr>`;
   const summaryText = `Total de Caixas: ${totalCaixas}` +
-    (totalKg > 0 ? ` &middot; Peso Total: ${totalKg.toFixed(3).replace('.', ',')} kg` : '') +
+    (totalKg > 0 ? ` &middot; Peso Total: ${formatKgPlain(totalKg)}` : '') +
     (totalBonif > 0 ? ` &middot; Bonificação: ${totalBonif}` : '');
   html += `<tr>
     <td colspan="4" class="summary-label">${summaryText}</td>
     <td colspan="6" class="total-label">TOTAL DO PEDIDO</td>
-    <td class="total-val">${total.toFixed(2)}</td>
+    <td class="total-val">${formatBRLPlain(total)}</td>
   </tr>`;
 
   // Observations
@@ -553,7 +555,7 @@ export default function App() {
     const cliente = clientes.find(c => c.id === pedidoAtual.clienteId);
     const clienteSnapshot = cliente ? { ...cliente } : null;
     const { total } = calcOrder(pedidoAtual.items);
-    const novo = { ...pedidoAtual, clienteSnapshot, total, finalizadoEm: new Date().toISOString() };
+    const novo = { ...pedidoAtual, data: todayISO(), clienteSnapshot, total, finalizadoEm: new Date().toISOString() };
     setPedidos([novo, ...pedidos]);
     exportPedidoStyled(novo, clienteSnapshot, vendedor);
     setPedidoAtual({ id: uid(), numero: '', data: todayISO(), clienteId: null, items: [], obs: '' });
@@ -563,7 +565,8 @@ export default function App() {
     if (!pedidoAtual.clienteId) return alert('Selecione um cliente antes de exportar.');
     if (pedidoAtual.items.length === 0) return alert('Adicione ao menos um produto.');
     const cliente = clientes.find(c => c.id === pedidoAtual.clienteId);
-    exportPedidoStyled(pedidoAtual, cliente, vendedor);
+    const pedidoComDataAtual = { ...pedidoAtual, data: todayISO() };
+    exportPedidoStyled(pedidoComDataAtual, cliente, vendedor);
   };
 
   const navItems = [
