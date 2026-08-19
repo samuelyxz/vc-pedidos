@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { ShoppingCart, Users, Package, Settings, ClipboardList, Plus, Trash2, Search, Download, Upload, X, AlertCircle, ChevronRight, RefreshCw, FileCheck2 } from 'lucide-react';
+import { ShoppingCart, Users, Package, Settings, ClipboardList, Plus, Trash2, Search, Download, Upload, X, AlertCircle, ChevronRight, RefreshCw, FileCheck2, Gift } from 'lucide-react';
 
 const DEFAULT_PRODUCTS = [{"codigo":"80.822.0003","sap":"2156207027","ean":"7898205922998","categoria":"CREME","subcategoria":"CR LEITE","linha":"GARRAFA","secao":"CREMES 500G","status":"","nome":"CREME DE LEITE LACFREE 500G","descricao_original":"CREME DE LEITE LACFREE VC 500G CX 12","un_cx":12,"preco_st":309.14,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2021/08/37390-MOCKUP-NR-LACFREE-CREME-DE-LEITE_AF01.png"},{"codigo":"80.822.0002","sap":"2156173027","ean":"7898205920222","categoria":"CREME","subcategoria":"CR LEITE","linha":"GARRAFA","secao":"CREMES 500G","status":"","nome":"CREME DE LEITE TRAD 500G","descricao_original":"CREME DE LEITE TRAD VC 500G CX 12","un_cx":12,"preco_st":288.49,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2021/08/37390-MOCKUP-NR-LACFREE-CREME-DE-LEITE_AF01.png"},{"codigo":"80.884.0004","sap":"","ean":"7898205925753","categoria":"IOGURTE","subcategoria":"A2","linha":"A2","secao":"IOG A2 INTEGRAL 500G","status":"LANÇAMENTO","nome":"IOG A2 INTEGRAL 2 INGR 500G","descricao_original":"IOG A2 INTEGRAL 2 INGR 500G VC CX 12","un_cx":12,"preco_st":123.08,"unidade":"CX","peso_kg":0,"imagem":""},{"codigo":"80.884.0005","sap":"","ean":"7898205925814","categoria":"IOGURTE","subcategoria":"A2","linha":"A2","secao":"IOG A2 INTEGRAL 500G","status":"LANÇAMENTO","nome":"IOG A2 INTEGRAL MEL 500G","descricao_original":"IOG A2 INTEGRAL MEL 500G VC CX 12","un_cx":12,"preco_st":123.08,"unidade":"CX","peso_kg":0,"imagem":""},{"codigo":"80.884.0006","sap":"","ean":"7898205925890","categoria":"IOGURTE","subcategoria":"A2","linha":"A2","secao":"IOG A2 INTEGRAL 500G","status":"LANÇAMENTO","nome":"IOG A2 INTEGRAL MORANGO 500G","descricao_original":"IOG A2 INTEGRAL MORANGO 500G VC CX 12","un_cx":12,"preco_st":123.08,"unidade":"CX","peso_kg":0,"imagem":""},{"codigo":"80.883.0005","sap":"","ean":"7898205925883","categoria":"IOGURTE","subcategoria":"TRADICIONAL","linha":"TRADICIONAL 170G","secao":"IOG TRADICIONAL BATIDO 500G","status":"LANÇAMENTO","nome":"IOG TRADICIONAL BATIDO 170G","descricao_original":"IOG TRADICIONAL BATIDO 170G VC CX 12","un_cx":12,"preco_st":34.23,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37400-MOCKUP-NR-LACFREE-IOGURTE-NATURAL-170G_AF02-removebg-preview.png"},{"codigo":"80.883.0007","sap":"","ean":"7898205925852","categoria":"IOGURTE","subcategoria":"TRADICIONAL","linha":"TRADICIONAL 500G","secao":"IOG TRADICIONAL BATIDO 500G","status":"LANÇAMENTO","nome":"IOG TRADICIONAL BATIDO 500G","descricao_original":"IOG TRADICIONAL BATIDO 500G VC CX 12","un_cx":12,"preco_st":87.27,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37433-MOCKUP-NR-LACFREE-IOGURTE-SABOR-TRADICIONAL-500G_AF01.png"},{"codigo":"80.883.0004","sap":"","ean":"7898205925906","categoria":"IOGURTE","subcategoria":"TRADICIONAL","linha":"TRADICIONAL 170G","secao":"IOG TRADICIONAL MORANGO","status":"LANÇAMENTO","nome":"IOG TRADICIONAL MORANGO 170G","descricao_original":"IOG TRADICIONAL MORANGO 170G VC CX 12","un_cx":12,"preco_st":34.23,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37340-MOCKUP-NR-LACFREE-IOGURTE-MORANGO-170G_AF01.png"},{"codigo":"80.883.0006","sap":"","ean":"7898205925869","categoria":"IOGURTE","subcategoria":"TRADICIONAL","linha":"TRADICIONAL 500G","secao":"IOG TRADICIONAL MORANGO","status":"LANÇAMENTO","nome":"IOG TRADICIONAL MORANGO 500G","descricao_original":"IOG TRADICIONAL MORANGO 500G VC CX 12","un_cx":12,"preco_st":87.27,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37555-MOCKUP-NR-LACFREE-IOGURTE-MORANGO-500G_AF01.png"},{"codigo":"80.884.0001","sap":"2157223172","ean":"7898205925449","categoria":"IOGURTE","subcategoria":"NATURAL","linha":"NATURAL","secao":"IOGURTE DESNATADO NATURAL","status":"","nome":"IOG DESNATADO NATURAL 140G","descricao_original":"IOG DESNATADO NATURAL VC 140G CX 12","un_cx":12,"preco_st":38.97,"unidade":"CX","peso_kg":0,"imagem":""},{"codigo":"80.882.0019","sap":"2157273257","ean":"7898205925609","categoria":"IOGURTE","subcategoria":"NATURAL","linha":"DESNATADO","secao":"IOGURTES DESN 2 INGR","status":"","nome":"IOG DESN 2 INGR LACFREE 160G","descricao_original":"IOG DESN 2 INGR LACFREE 160G VC CX 24","un_cx":24,"preco_st":79.46,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/09/41434-MOCKUP-2-INGREDIENTES-INTEGRAL-160G-LACFREE_AF02.png"},{"codigo":"80.882.0020","sap":"2157274257","ean":"7898205925593","categoria":"IOGURTE","subcategoria":"NATURAL","linha":"DESNATADO","secao":"IOGURTES DESN 2 INGR","status":"","nome":"IOG DESN 2 INGR LACFREE 480G","descricao_original":"IOG DESN 2 INGR LACFREE 480G VC CX 12","un_cx":12,"preco_st":110.13,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/03/41411-MOCKUP-2-INGREDIENTES-INTEGRAL-480ML-LACFREE_AF02.png"},{"codigo":"80.884.0002","sap":"2157273027","ean":"7898205925579","categoria":"IOGURTE","subcategoria":"NATURAL","linha":"INTEGRAL","secao":"IOGURTES INTEGRAL 2 INGR","status":"","nome":"IOG INTEGRAL 2 INGR 160G","descricao_original":"IOG INTEGRAL 2 INGR 160G VC CX 24","un_cx":24,"preco_st":79.46,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/09/41434-MOCKUP-2-INGREDIENTES-INTEGRAL-160G-LACFREE_AF02.png"},{"codigo":"80.884.0003","sap":"2157274027","ean":"7898205925586","categoria":"IOGURTE","subcategoria":"NATURAL","linha":"INTEGRAL","secao":"IOGURTES INTEGRAL 2 INGR","status":"","nome":"IOG INTEGRAL 2 INGR 480G","descricao_original":"IOG INTEGRAL 2 INGR 480G VC CX 12","un_cx":12,"preco_st":110.13,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/03/41411-MOCKUP-2-INGREDIENTES-INTEGRAL-480ML-LACFREE_AF02.png"},{"codigo":"80.761.0001","sap":"2161207006","ean":"7898205925623","categoria":"IOGURTE","subcategoria":"KEFIR","linha":"KEFIR","secao":"IOGURTES KEFIR 500G","status":"","nome":"KEFIR LACFREE MORANGO 500G","descricao_original":"KEFIR LACFREE MORANGO 500G VC CX 12","un_cx":12,"preco_st":129.13,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/03/thumbnail_41405-MOCKUP-KEFIR-MORANGO-500ML-TK6.png"},{"codigo":"80.761.0002","sap":"2161207027","ean":"7898205925616","categoria":"IOGURTE","subcategoria":"KEFIR","linha":"KEFIR","secao":"IOGURTES KEFIR 500G","status":"","nome":"KEFIR LACFREE TRADICIONAL 500G","descricao_original":"KEFIR LACFREE TRADICIONAL 500G VC CX 12","un_cx":12,"preco_st":129.13,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/03/thumbnail_41403-MOCKUP-KEFIR-NATURAL-500ML-TK11.png"},{"codigo":"80.882.0002","sap":"2157223163","ean":"7898205924060","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 140G","secao":"IOGURTES LACFREE 140G (CAIXA COM 12 UNIDADES)","status":"","nome":"IOG LACFREE BMM 140G","descricao_original":"IOG LACFREE BMM VC 140G CX 12","un_cx":12,"preco_st":46.58,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37429-MOCKUP-NR-LACFREE-IOGURTE-MORANGO-140G_AF01.png"},{"codigo":"80.882.0010","sap":"2157223006","ean":"7898205923919","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 140G","secao":"IOGURTES LACFREE 140G (CAIXA COM 12 UNIDADES)","status":"","nome":"IOG LACFREE MORANGO 140G","descricao_original":"IOG LACFREE MORANGO VC 140G CX 12","un_cx":12,"preco_st":46.58,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37429-MOCKUP-NR-LACFREE-IOGURTE-MORANGO-140G_AF01.png"},{"codigo":"80.882.0015","sap":"2157223027","ean":"7898205923902","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 140G","secao":"IOGURTES LACFREE 140G (CAIXA COM 12 UNIDADES)","status":"","nome":"IOG LACFREE TRADICIONAL 140G","descricao_original":"IOG LACFREE TRADICIONAL VC 140G CX 12","un_cx":12,"preco_st":46.58,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37842-MOCKUP-NR-LACFREE-IOGURTE-NATURAL-SABOR-TRADICIONAL-140G_AF01.png"},{"codigo":"80.882.0004","sap":"2157176163","ean":"7898205924466","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 170G","secao":"IOGURTES LACFREE 170G","status":"","nome":"IOG LACFREE BMM 170G","descricao_original":"IOG LACFREE BMM VC 170G CX 12","un_cx":12,"preco_st":48.4,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37340-MOCKUP-NR-LACFREE-IOGURTE-MORANGO-170G_AF01.png"},{"codigo":"80.882.0012","sap":"2157176167","ean":"7898205924480","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 170G","secao":"IOGURTES LACFREE 170G","status":"","nome":"IOG LACFREE MORANGO 170G","descricao_original":"IOG LACFREE MORANGO VC 170G CX 12","un_cx":12,"preco_st":48.4,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37340-MOCKUP-NR-LACFREE-IOGURTE-MORANGO-170G_AF01.png"},{"codigo":"80.882.0017","sap":"2157176027","ean":"7898205924497","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 170G","secao":"IOGURTES LACFREE 170G","status":"","nome":"IOG LACFREE TRADICIONAL 170G","descricao_original":"IOG LACFREE TRADICIONAL VC 170G CX 12","un_cx":12,"preco_st":48.4,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37400-MOCKUP-NR-LACFREE-IOGURTE-NATURAL-170G_AF02-removebg-preview.png"},{"codigo":"80.882.0001","sap":"2157173171","ean":"7898205923827","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 500G","secao":"IOGURTES LACFREE 500G","status":"","nome":"IOG LACFREE AMEIXA 500G","descricao_original":"IOG LACFREE AMEIXA VC 500G CX 12","un_cx":12,"preco_st":117.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37876-MOCKUP-NR-LACFREE-IOGURTE-AMEIXA-500G_AF01.png"},{"codigo":"80.882.0005","sap":"2157173163","ean":"7898205923940","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 500G","secao":"IOGURTES LACFREE 500G","status":"","nome":"IOG LACFREE BMM 500G","descricao_original":"IOG LACFREE BMM VC 500G CX 12","un_cx":12,"preco_st":117.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37555-MOCKUP-NR-LACFREE-IOGURTE-MORANGO-500G_AF01.png"},{"codigo":"80.882.0006","sap":"2157173232","ean":"7898205925180","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 500G","secao":"IOGURTES LACFREE 500G","status":"","nome":"IOG LACFREE COCO 500G","descricao_original":"IOG LACFREE COCO VC 500G CX 12","un_cx":12,"preco_st":117.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2021/06/Imagem-do-WhatsApp-de-2023-10-10-às-16.18.04_e7ed8e1e-removebg-preview.png"},{"codigo":"80.882.0009","sap":"2157173166","ean":"7898205924305","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 500G","secao":"IOGURTES LACFREE 500G","status":"","nome":"IOG LACFREE GOJIBERRY 500G","descricao_original":"IOG LACFREE GOJIBERRY VC 500G CX 12","un_cx":12,"preco_st":117.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37431-MOCKUP-NR-LACFREE-IOGURTE-CRANBERRY-E-GOJIBERRY-500G_AF01.png"},{"codigo":"80.882.0013","sap":"2157173006","ean":"7898205923650","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 500G","secao":"IOGURTES LACFREE 500G","status":"","nome":"IOG LACFREE MORANGO 500G","descricao_original":"IOG LACFREE MORANGO VC 500G CX 12","un_cx":12,"preco_st":117.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37555-MOCKUP-NR-LACFREE-IOGURTE-MORANGO-500G_AF01.png"},{"codigo":"80.882.0014","sap":"2157173172","ean":"7898205923988","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 500G","secao":"IOGURTES LACFREE 500G","status":"","nome":"IOG LACFREE S/ADOC NATURAL 500G","descricao_original":"IOG LACFREE S/ADOC NATURAL VC 500G CX 12","un_cx":12,"preco_st":117.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37398-MOCKUP-NR-LACFREE-IOGURTE-NATURAL-SEM-ACUCAR-500G_AF01.png"},{"codigo":"80.882.0018","sap":"2157207027","ean":"7898205923643","categoria":"IOGURTE","subcategoria":"LACFREE","linha":"LACFREE 500G","secao":"IOGURTES LACFREE 500G","status":"","nome":"IOG LACFREE TRADICIONAL 500G","descricao_original":"IOG LACFREE TRADICIONAL VC 500G CX 12","un_cx":12,"preco_st":117.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37433-MOCKUP-NR-LACFREE-IOGURTE-SABOR-TRADICIONAL-500G_AF01.png"},{"codigo":"80.878.0002","sap":"2157223268","ean":"7898205925555","categoria":"WHEY IOGURTE","subcategoria":"WHEY COLHERÁVEL","linha":"WHEY COLHERÁVEL","secao":"IOGURTES NATURAL WHEY 140G","status":"","nome":"IOG WHEY 11 ABAC E COCO 140G","descricao_original":"IOG WHEY 11 ABAC E COCO 140G VC CX 12","un_cx":12,"preco_st":84.73,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/08/Mockup_INW02_NaturalWhey_AbacaxiCoco-1.png"},{"codigo":"80.878.0004","sap":"2157223133","ean":"7898205925562","categoria":"WHEY IOGURTE","subcategoria":"WHEY COLHERÁVEL","linha":"WHEY COLHERÁVEL","secao":"IOGURTES NATURAL WHEY 140G","status":"","nome":"IOG WHEY 11 BANANA E CANELA 140G","descricao_original":"IOG WHEY 11 BANANA E CANELA 140G VC CX 12","un_cx":12,"preco_st":84.73,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/08/Mockup_INW17_NaturalWhey_BananaCanela-1.png"},{"codigo":"80.878.0005","sap":"2157223019","ean":"7898205925395","categoria":"WHEY IOGURTE","subcategoria":"WHEY COLHERÁVEL","linha":"WHEY COLHERÁVEL","secao":"IOGURTES NATURAL WHEY 140G","status":"","nome":"IOG WHEY 11 FRUTAS VERMELHAS 140G","descricao_original":"IOG WHEY 11 FRUTAS VERMELHAS 140G CX 12","un_cx":12,"preco_st":84.73,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2023/03/Pote_NaturalWhey_FrutasVermelhas-1.png"},{"codigo":"80.878.0006","sap":"2157223010","ean":"7898205925401","categoria":"WHEY IOGURTE","subcategoria":"WHEY COLHERÁVEL","linha":"WHEY COLHERÁVEL","secao":"IOGURTES NATURAL WHEY 140G","status":"","nome":"IOG WHEY 11 MARACUJA 140G","descricao_original":"IOG WHEY 11 MARACUJA 140G CX 12","un_cx":12,"preco_st":84.73,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2023/03/Pote_NaturalWhey_Maracuja-1.png"},{"codigo":"80.876.0009","sap":"2157223129","ean":"7898205925388","categoria":"WHEY IOGURTE","subcategoria":"WHEY COLHERÁVEL","linha":"WHEY COLHERÁVEL","secao":"IOGURTES NATURAL WHEY 140G","status":"","nome":"IOG WHEY 14 TRADICIONAL 140G","descricao_original":"IOG WHEY 14 TRADICIONAL 140G CX 12","un_cx":12,"preco_st":84.73,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2023/03/Pote_NaturalWhey_Tradicional-1.png"},{"codigo":"80.879.0001","sap":"2157176157","ean":"7898205925463","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.10G","linha":"WHEY I.10G","secao":"IOGURTES NATURAL WHEY 170G","status":"","nome":"IOG WHEY 10 GOJIBERRY 170G","descricao_original":"IOG WHEY 10 GOJIBERRY VC 170G CX 12","un_cx":12,"preco_st":61.22,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2023/03/VerdeCampo_GojiCran170g.png"},{"codigo":"80.879.0002","sap":"2157176000","ean":"7898205925470","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.10G","linha":"WHEY I.10G","secao":"IOGURTES NATURAL WHEY 170G","status":"","nome":"IOG WHEY 10 PESSEGO 170G","descricao_original":"IOG WHEY 10 PESSEGO VC 170G CX 12","un_cx":12,"preco_st":61.22,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2023/03/VerdeCampo_Pessego_170g.png"},{"codigo":"80.876.0001","sap":"2157193133","ean":"7898205924206","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.15G","linha":"WHEY I.15G","secao":"IOGURTES NATURAL WHEY 250G","status":"","nome":"IOG WHEY 15 BANANA 250G","descricao_original":"IOG WHEY 15 BANANA VC 250G CX 12","un_cx":12,"preco_st":111.62,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/Iogurte-Natural-Whey-Banana-15g-de-Proteina-Verde-Campo-250g-foto.png"},{"codigo":"80.876.0002","sap":"2157177134","ean":"7898205924312","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.15G","linha":"WHEY I.15G","secao":"IOGURTES NATURAL WHEY 250G","status":"","nome":"IOG WHEY 15 BAUNILHA 250G","descricao_original":"IOG WHEY 15 BAUNILHA VC 250G CX 12","un_cx":12,"preco_st":111.62,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/Iogurte-Natural-Whey-Baunilha-15g-de-Proteina-Verde-Campo-250g-foto.png"},{"codigo":"80.876.0004","sap":"2157177164","ean":"7898205924435","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.15G","linha":"WHEY I.15G","secao":"IOGURTES NATURAL WHEY 250G","status":"","nome":"IOG WHEY 15 COOKIES&CREAM 250G","descricao_original":"IOG WHEY 15 COOKIES&CREAM VC 250G CX 12","un_cx":12,"preco_st":111.62,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/Iogurte-Natural-Whey-Cookies-and-Cream-15g-de-Proteina-Verde-Campo-250g-foto.png"},{"codigo":"80.876.0008","sap":"2157177066","ean":"7898205924220","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.15G","linha":"WHEY I.15G","secao":"IOGURTES NATURAL WHEY 250G","status":"","nome":"IOG WHEY 15 MORANGO 250G","descricao_original":"IOG WHEY 15 MORANGO VC 250G CX 12","un_cx":12,"preco_st":111.62,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/Iogurte-Natural-Whey-Morango-15g-de-Proteina-Verde-Campo-250g-foto.png"},{"codigo":"80.876.0021","sap":"","ean":"7898205925845","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.21G","linha":"WHEY I.21G","secao":"IOGURTES NATURAL WHEY 250G","status":"LANÇAMENTO","nome":"IOG WHEY 21 ACAI 250G","descricao_original":"IOG WHEY 21 ACAI VC 250G CX 12","un_cx":12,"preco_st":144.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/41441-Iogurte-Natural-Whey-Fibras-Acai-21g.png"},{"codigo":"80.876.0010","sap":"2157177803","ean":"7898205925128","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.21G","linha":"WHEY I.21G","secao":"IOGURTES NATURAL WHEY 250G","status":"","nome":"IOG WHEY 21 COCO 250G","descricao_original":"IOG WHEY 21 COCO VC 250G CX 12","un_cx":12,"preco_st":131.34,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2019/10/37484-MOCKUP-NR-NATURAL-WHEY-21G-DE-PROTEINA-COCO-250G_AF01.png"},{"codigo":"80.876.0011","sap":"2157177165","ean":"7898205924671","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.21G","linha":"WHEY I.21G","secao":"IOGURTES NATURAL WHEY 250G","status":"","nome":"IOG WHEY 21 DOCE DE LEITE 250G","descricao_original":"IOG WHEY 21 DOCE DE LEITE VC 250G CX 12","un_cx":12,"preco_st":131.34,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37486-MOCKUP-NR-NATURAL-WHEY-21G-DE-PROTEINA-DOCE-DE-LEITE-250G_AF01.png"},{"codigo":"80.876.0020","sap":"","ean":"7898205925838","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.21G","linha":"WHEY I.21G","secao":"IOGURTES NATURAL WHEY 250G","status":"LANÇAMENTO","nome":"IOG WHEY 21 MARACUJA 250G","descricao_original":"IOG WHEY 21 MARACUJA VC 250G CX 12","un_cx":12,"preco_st":144.48,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/41442-Iogurte-Natural-Whey-Fibras-Maracuja-21g-1.png"},{"codigo":"80.876.0012","sap":"2157177177","ean":"7898205924916","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.21G","linha":"WHEY I.21G","secao":"IOGURTES NATURAL WHEY 250G","status":"","nome":"IOG WHEY 21 MORANGO 250G","descricao_original":"IOG WHEY 21 MORANGO VC 250G CX 12","un_cx":12,"preco_st":131.34,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2019/04/37488-MOCKUP-NR-NATURAL-WHEY-21G-DE-PROTEINA-MORANGO-250G_AF01.png"},{"codigo":"80.876.0014","sap":"2157177017","ean":"7898205925203","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.21G","linha":"WHEY I.21G","secao":"IOGURTES NATURAL WHEY 250G","status":"","nome":"IOG WHEY 21 TORTA LIMAO 250G","descricao_original":"IOG WHEY 21 TORTA LIMAO VC 250G CX 12","un_cx":12,"preco_st":131.34,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2021/06/37734-MOCKUP-NR-NATURAL-WHEY-21G-DE-PROTEINA-TORTA-DE-LIMAO-250G_AF01.png"},{"codigo":"80.876.0015","sap":"2157207232","ean":"7898205925210","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.30G","linha":"WHEY I.30G","secao":"IOGURTES NATURAL WHEY 500G","status":"","nome":"IOG WHEY 30 COCO 500G","descricao_original":"IOG WHEY 30 COCO VC 500G CX 12","un_cx":12,"preco_st":177.71,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/Iogurte-Natural-Whey-Coco-30g-de-Proteina-Verde-Campo-500g-foto.png"},{"codigo":"80.876.0016","sap":"2157173164","ean":"7898205924732","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.30G","linha":"WHEY I.30G","secao":"IOGURTES NATURAL WHEY 500G","status":"","nome":"IOG WHEY 30 COOKIES&CREAM 500G","descricao_original":"IOG WHEY 30 COOKIES&CREAM VC 500G CX 12","un_cx":12,"preco_st":177.71,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/Iogurte-Natural-Whey-Cookies-and-Cream-30g-de-Proteina-Verde-Campo-500g-foto.png"},{"codigo":"80.876.0018","sap":"2157173177","ean":"7898205924725","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.30G","linha":"WHEY I.30G","secao":"IOGURTES NATURAL WHEY 500G","status":"","nome":"IOG WHEY 30 MORANGO 500G","descricao_original":"IOG WHEY 30 MORANGO VC 500G CX 12","un_cx":12,"preco_st":177.71,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/Iogurte-Natural-Whey-Morango-30g-de-Proteina-Verde-Campo-500g-foto.png"},{"codigo":"80.876.0019","sap":"2157207129","ean":"7898205925357","categoria":"WHEY IOGURTE","subcategoria":"WHEY I.30G","linha":"WHEY I.30G","secao":"IOGURTES NATURAL WHEY 500G","status":"","nome":"IOG WHEY 30 TRADICIONAL 500G","descricao_original":"IOG WHEY 30 TRADICIONAL VC 500G CX 12","un_cx":12,"preco_st":177.71,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2026/01/Iogurte-Natural-Whey-Tradicional-30g-de-Proteina-Verde-Campo-500g-foto.png"},{"codigo":"80.883.0012","sap":"2169209163","ean":"7898205924800","categoria":"IOGURTE","subcategoria":"PROBIOTICO","linha":"PROBIOTICO 170G","secao":"IOGURTES PROBIÓTICOS 170G","status":"","nome":"IOG PROBIOTICO BMM 170G","descricao_original":"IOG PROBIOTICO BMM VC 170G CX 12","un_cx":12,"preco_st":50.63,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2020/08/37352-MOCKUP-NR-IOGURTE-PROBIOTICO-MORANGO-170G_AF01.png"},{"codigo":"80.883.0016","sap":"2169209006","ean":"7898205924824","categoria":"IOGURTE","subcategoria":"PROBIOTICO","linha":"PROBIOTICO 170G","secao":"IOGURTES PROBIÓTICOS 170G","status":"","nome":"IOG PROBIOTICO MORANGO 170G","descricao_original":"IOG PROBIOTICO MORANGO VC 170G CX 12","un_cx":12,"preco_st":50.63,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2020/08/37352-MOCKUP-NR-IOGURTE-PROBIOTICO-MORANGO-170G_AF01.png"},{"codigo":"80.883.0014","sap":"2169173232","ean":"7898205925265","categoria":"IOGURTE","subcategoria":"PROBIOTICO","linha":"PROBIOTICO 500G","secao":"IOGURTES PROBIÓTICOS 500G","status":"","nome":"IOG PROBIOTICO COCO 500G","descricao_original":"IOG PROBIOTICO COCO VC 500G CX12","un_cx":12,"preco_st":124.07,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2021/06/7898205925265-1-removebg-preview.png"},{"codigo":"80.883.0017","sap":"2169210006","ean":"7898205924787","categoria":"IOGURTE","subcategoria":"PROBIOTICO","linha":"PROBIOTICO 500G","secao":"IOGURTES PROBIÓTICOS 500G","status":"","nome":"IOG PROBIOTICO MORANGO 500G","descricao_original":"IOG PROBIOTICO MORANGO VC 500G CX 12","un_cx":12,"preco_st":124.07,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2020/08/37472-MOCKUP-NR-IOGURTE-TRADICIONAL-MORANGO-500G_AF01.png"},{"codigo":"80.883.0018","sap":"2169210027","ean":"7898205924794","categoria":"IOGURTE","subcategoria":"PROBIOTICO","linha":"PROBIOTICO 500G","secao":"IOGURTES PROBIÓTICOS 500G","status":"","nome":"IOG PROBIOTICO TRADICIONAL 500G","descricao_original":"IOG PROBIOTICO TRADICIONAL VC 500G CX12","un_cx":12,"preco_st":124.07,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37869-MOCKUP-NR-IOGURTE-TRADICIONAL-SABOR-TRADICIONAL-500G_AF01.png"},{"codigo":"80.883.0010","sap":"2169173247","ean":"7898205925234","categoria":"IOGURTE","subcategoria":"PROBIOTICO","linha":"PROBIOTICO ZERO 500G","secao":"IOGURTES PROBIÓTICOS TRIPLO ZERO 500G","status":"","nome":"IOG PROB TRIPLO ZERO MORAN 500G","descricao_original":"IOG PROB TRIPLO ZERO MORAN VC 500G CX12","un_cx":12,"preco_st":130.37,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2021/06/37847-MOCKUP-NR-LINHA-PROBIOTICO-TRIPLO-ZERO-MORANGO-500G_AF01.png"},{"codigo":"80.881.0001","sap":"2157176173","ean":"7898205924862","categoria":"IOGURTE","subcategoria":"KIDS","linha":"KIDS","secao":"LINHA KIDS","status":"","nome":"IOG KIDS BM 170G","descricao_original":"IOG KIDS BM VC 170G CX 12","un_cx":12,"preco_st":45.6,"unidade":"CX","peso_kg":0,"imagem":""},{"codigo":"80.881.0002","sap":"2157176006","ean":"7898205924879","categoria":"IOGURTE","subcategoria":"KIDS","linha":"KIDS","secao":"LINHA KIDS","status":"","nome":"IOG KIDS MORANGO 170G","descricao_original":"IOG KIDS MORANGO VC 170G CX 12","un_cx":12,"preco_st":45.6,"unidade":"CX","peso_kg":0,"imagem":""},{"codigo":"80.833.0001","sap":"2155204027","ean":"7898205925654","categoria":"PASTAS","subcategoria":"COALHADA","linha":"COALHADA SECA","secao":"PASTAS","status":"","nome":"COALHADA SECA 180G","descricao_original":"COALHADA SECA 180G VC CX 12","un_cx":12,"preco_st":111.85,"unidade":"CX","peso_kg":0,"imagem":""},{"codigo":"80.801.0000","sap":"","ean":"7898205925425","categoria":"PASTAS","subcategoria":"MANTEIGA","linha":"MANTEIGA","secao":"PASTAS","status":"LANÇAMENTO","nome":"MANTEIGA LACFREE 200G","descricao_original":"MANTEIGA LACFREE 200G VC CX 12","un_cx":12,"preco_st":143.08,"unidade":"CX","peso_kg":0,"imagem":""},{"codigo":"80.801.0001","sap":"2155179027","ean":"7898205920239","categoria":"PASTAS","subcategoria":"COTTAGE","linha":"COTTAGE 200G","secao":"PASTAS","status":"","nome":"QUEIJO COTTAGE LACFREE 200G","descricao_original":"QUEIJO COTTAGE LACFREE VC 200G CX 12","un_cx":12,"preco_st":140.76,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/12/VC_CottageLacfree_200g-1.png"},{"codigo":"80.801.0002","sap":"2162180170","ean":"7898205924053","categoria":"PASTAS","subcategoria":"COTTAGE","linha":"COTTAGE 400G","secao":"PASTAS","status":"","nome":"QUEIJO COTTAGE LACFREE 400G","descricao_original":"QUEIJO COTTAGE LACFREE VC 400G CX 12","un_cx":12,"preco_st":252.95,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/12/VC_CottageLacfree_400g-1.png"},{"codigo":"80.801.0003","sap":"2162179172","ean":"7898205920215","categoria":"PASTAS","subcategoria":"COTTAGE","linha":"COTTAGE 200G","secao":"PASTAS","status":"","nome":"QUEIJO COTTAGE TRAD 200G","descricao_original":"QUEIJO COTTAGE TRAD VC 200G CX 12","un_cx":12,"preco_st":121.62,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/12/VC_CottageLacfree_200g-1.png"},{"codigo":"80.801.0004","sap":"2162180027","ean":"7898205924374","categoria":"PASTAS","subcategoria":"COTTAGE","linha":"COTTAGE 400G","secao":"PASTAS","status":"","nome":"QUEIJO COTTAGE TRAD 400G","descricao_original":"QUEIJO COTTAGE TRAD VC 400G CX 12","un_cx":12,"preco_st":216.43,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/12/VC_CottageLacfree_400g-1.png"},{"codigo":"80.912.0001","sap":"2163192027","ean":"7898205923858","categoria":"PASTAS","subcategoria":"REQUEIJAO","linha":"REQUEIJAO","secao":"PASTAS","status":"","nome":"REQUEIJAO LACFREE 180G","descricao_original":"REQUEIJAO LACFREE 180G CX 12","un_cx":12,"preco_st":127.11,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/11/WhatsApp_Image_2024-10-31_at_16.04.43-removebg-preview.png"},{"codigo":"80.912.0003","sap":"2163254027","ean":"7898205925197","categoria":"PASTAS","subcategoria":"REQUEIJAO","linha":"REQUEIJAO","secao":"PASTAS","status":"","nome":"REQUEIJAO LACFREE 400G","descricao_original":"REQUEIJAO LACFREE 400G CX 12","un_cx":12,"preco_st":255.16,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/11/WhatsApp_Image_2024-10-31_at_16.04.43__1_-removebg-preview.png"},{"codigo":"80.912.0004","sap":"","ean":"7898205925739","categoria":"PASTAS","subcategoria":"REQUEIJAO","linha":"REQUEIJAO","secao":"PASTAS","status":"LANÇAMENTO","nome":"REQUEIJAO TRADICIONAL 180G","descricao_original":"REQUEIJAO TRADICIONAL 180G VC CX 12","un_cx":12,"preco_st":108.05,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/07/Mockup-Requeijao-Tradicional-180g-removebg-preview.png"},{"codigo":"80.831.0001","sap":"2162177027","ean":"7898205924336","categoria":"QUEIJO","subcategoria":"FRESCAL","linha":"FRESCAL 250G","secao":"QUEIJO FRESCAL","status":"","nome":"QUEIJO FRESCAL LACFREE 250G","descricao_original":"QUEIJO FRESCAL LACFREE VC 250G CX 12","un_cx":12,"preco_st":45.0,"unidade":"KG","peso_kg":3.2,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37874-MOCKUP-NR-QUEIJO-MINAS-FRESCAL-LACFREE-250G_AF02.png"},{"codigo":"80.831.0003","sap":"2162270170","ean":"7898205923278","categoria":"QUEIJO","subcategoria":"FRESCAL","linha":"FRESCAL 450G","secao":"QUEIJO FRESCAL","status":"","nome":"QUEIJO FRESCAL LIGHT 450G","descricao_original":"QUEIJO FRESCAL LIGHT VC 450G CX 08","un_cx":8,"preco_st":38.05,"unidade":"KG","peso_kg":3.6,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37743-MOCKUP-NR-QUEIJO-MINAS-FRESCAL-LIGHT-450G_AF01-2.png"},{"codigo":"80.831.0008","sap":"2162270027","ean":"7898205923728","categoria":"QUEIJO","subcategoria":"FRESCAL","linha":"FRESCAL 450G","secao":"QUEIJO FRESCAL","status":"","nome":"QUEIJO FRESCAL TRAD 450G","descricao_original":"QUEIJO FRESCAL TRAD VC 450G CX 08","un_cx":8,"preco_st":37.46,"unidade":"KG","peso_kg":3.6,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/38384-MOCKUP-NR-QUEIJO-MINAS-FRESCAL-450_AF01.png"},{"codigo":"80.831.0007","sap":"2162181027","ean":"7898205923728","categoria":"QUEIJO","subcategoria":"FRESCAL","linha":"FRESCAL 450G","secao":"QUEIJO FRESCAL","status":"","nome":"QUEIJO FRESCAL TRAD 450G","descricao_original":"QUEIJO FRESCAL TRAD VC 450G CX 18","un_cx":18,"preco_st":37.46,"unidade":"KG","peso_kg":8.1,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/38384-MOCKUP-NR-QUEIJO-MINAS-FRESCAL-450_AF01.png"},{"codigo":"80.861.0001","sap":"2166221027","ean":"7898205924909","categoria":"QUEIJO","subcategoria":"MUSSARELA","linha":"MUSSARELA FATIADA","secao":"QUEIJO MUSSARELA","status":"","nome":"QUEIJO MUSSARELA LACFREE 150G","descricao_original":"QUEIJO MUSSARELA LACFREE 150G CX 32","un_cx":32,"preco_st":351.85,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/07/Queijo-mussarela-fatiada-LACFREE-150g-1.png"},{"codigo":"80.861.0002","sap":"2166190027","ean":"7898205924015","categoria":"QUEIJO","subcategoria":"MUSSARELA","linha":"MUSSARELA 3KG","secao":"QUEIJO MUSSARELA","status":"","nome":"QUEIJO MUSSARELA LACFREE 3KG","descricao_original":"QUEIJO MUSSARELA LACFREE VC 3KG CX 6","un_cx":6,"preco_st":54.34,"unidade":"KG","peso_kg":17.0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37553-MOCKUP-NR-QUEIJO-MUSSARELA-LACFREE-500G_AF01.png"},{"codigo":"80.861.0003","sap":"2166173027","ean":"7898205924138","categoria":"QUEIJO","subcategoria":"MUSSARELA","linha":"MUSSARELA 500G","secao":"QUEIJO MUSSARELA","status":"","nome":"QUEIJO MUSSARELA LACFREE 500G","descricao_original":"QUEIJO MUSSARELA LACFREE VC 500G CX 12","un_cx":12,"preco_st":54.84,"unidade":"KG","peso_kg":5.8,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37553-MOCKUP-NR-QUEIJO-MUSSARELA-LACFREE-500G_AF01.png"},{"codigo":"80.861.0004","sap":"2166190170","ean":"7898205923797","categoria":"QUEIJO","subcategoria":"MUSSARELA","linha":"MUSSARELA 3KG","secao":"QUEIJO MUSSARELA","status":"","nome":"QUEIJO MUSSARELA LIGHT 3KG","descricao_original":"QUEIJO MUSSARELA LIGHT VC 3KG CX 6","un_cx":6,"preco_st":54.03,"unidade":"KG","peso_kg":17.0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37553-MOCKUP-NR-QUEIJO-MUSSARELA-LACFREE-500G_AF01.png"},{"codigo":"80.862.0001","sap":"2162191172","ean":"7898205923810","categoria":"QUEIJO","subcategoria":"PADRÃO","linha":"PADRÃO 450G","secao":"QUEIJO PADRÃO","status":"","nome":"QUEIJO P. COBOCO 450G","descricao_original":"QUEIJO P. COBOCO VC 450G CX 16","un_cx":16,"preco_st":55.94,"unidade":"KG","peso_kg":6.9,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/38029-MOCKUP-NR-QUEIJO-MINAS-PADRAO-LIGHT-450G-1.png"},{"codigo":"80.832.0006","sap":"2162211027","ean":"7898205924756","categoria":"QUEIJO","subcategoria":"PADRÃO","linha":"PADRÃO 450G","secao":"QUEIJO PADRÃO","status":"","nome":"QUEIJO PADRAO 450G","descricao_original":"QUEIJO PADRAO VC 450G CX 16","un_cx":16,"preco_st":54.87,"unidade":"KG","peso_kg":6.9,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2019/04/19508-MOCKUP-COCA-COLA-QUEIJO-MINAS-PADRAO-450G_AF02.png"},{"codigo":"80.832.0002","sap":"2162191027","ean":"7898205923896","categoria":"QUEIJO","subcategoria":"PADRÃO","linha":"PADRÃO 450G","secao":"QUEIJO PADRÃO","status":"","nome":"QUEIJO PADRAO LACFREE 450G","descricao_original":"QUEIJO PADRAO LACFREE VC 450G CX 16","un_cx":16,"preco_st":64.47,"unidade":"KG","peso_kg":6.9,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/7898205923896-Sem-Fundo.png"},{"codigo":"80.832.0004","sap":"2162191170","ean":"7898205923766","categoria":"QUEIJO","subcategoria":"PADRÃO","linha":"PADRÃO 450G","secao":"QUEIJO PADRÃO","status":"","nome":"QUEIJO PADRAO LIGHT 450G","descricao_original":"QUEIJO PADRAO LIGHT VC 450G CX 16","un_cx":16,"preco_st":58.25,"unidade":"KG","peso_kg":6.9,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/38029-MOCKUP-NR-QUEIJO-MINAS-PADRAO-LIGHT-450G-1.png"},{"codigo":"80.862.0002","sap":"2162173027","ean":"7898205924121","categoria":"QUEIJO","subcategoria":"PADRÃO","linha":"PADRÃO 450G","secao":"QUEIJO PRATO","status":"","nome":"QUEIJO P. LANCHE LACFREE 500G","descricao_original":"QUEIJO P. LANCHE LACFREE VC 500G CX 12","un_cx":12,"preco_st":55.9,"unidade":"KG","peso_kg":5.6,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2018/11/37553-MOCKUP-NR-QUEIJO-MUSSARELA-LACFREE-500G_AF01.png"},{"codigo":"80.900.0001","sap":"2158193134","ean":"7898205924398","categoria":"WHEY SHAKE","subcategoria":"WHEY S.14G","linha":"WHEY S.14G","secao":"SHAKES WHEY 14","status":"","nome":"SHAKE 14 WHEY BAUNILHA 250 ML","descricao_original":"SHAKE 14 WHEY BAUNILHA VC 250 ML CX 12","un_cx":12,"preco_st":59.36,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/04/MOCKUP-NR-NATURAL-WHEY-SHAKE-BAUNILHA-250G-18032025.png"},{"codigo":"80.900.0002","sap":"2158193261","ean":"7898205925340","categoria":"WHEY SHAKE","subcategoria":"WHEY S.14G","linha":"WHEY S.14G","secao":"SHAKES WHEY 14","status":"","nome":"SHAKE 14 WHEY CAPPUCCINO 250 ML","descricao_original":"SHAKE 14 WHEY CAPPUCCINO VC 250 ML CX 12","un_cx":12,"preco_st":59.36,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/04/MOCKUP-NR-NATURAL-WHEY-14G-DE-PROTEINA-CAPPUCCINO-250G_18032025.png"},{"codigo":"80.900.0003","sap":"2158193214","ean":"7898205925364","categoria":"WHEY SHAKE","subcategoria":"WHEY S.14G","linha":"WHEY S.14G","secao":"SHAKES WHEY 14","status":"","nome":"SHAKE 14 WHEY CARAMELO 250 ML","descricao_original":"SHAKE 14 WHEY CARAMELO VC 250 ML CX 12","un_cx":12,"preco_st":59.36,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/04/MOCKUP-NATURAL-WHEY-14G-DE-PROTEINA-CARAMELO-250G_18032025.png"},{"codigo":"80.900.0004","sap":"2158193024","ean":"7898205924411","categoria":"WHEY SHAKE","subcategoria":"WHEY S.14G","linha":"WHEY S.14G","secao":"SHAKES WHEY 14","status":"","nome":"SHAKE 14 WHEY CHOCOLATE 250 ML","descricao_original":"SHAKE 14 WHEY CHOCOLATE VC 250 ML CX 12","un_cx":12,"preco_st":59.53,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/04/MOCKUP-NR-NATURAL-WHEY-SHAKE-CHOCOLATE-250G-18032025.png"},{"codigo":"80.900.0005","sap":"","ean":"7898205925791","categoria":"WHEY SHAKE","subcategoria":"WHEY S.100%","linha":"WHEY S.100%","secao":"SHAKES WHEY 15","status":"LANÇAMENTO","nome":"SHAKE 15 100% WHEY CHOCOLATE 250ML","descricao_original":"SHAKE 15 100% WHEY CHOCOLATE VC 250ML CX 12","un_cx":12,"preco_st":71.43,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/07/Shake-Natural-Whey-Chocolate-100_.png"},{"codigo":"80.900.0006","sap":"","ean":"7898205925807","categoria":"WHEY SHAKE","subcategoria":"WHEY S.100%","linha":"WHEY S.100%","secao":"SHAKES WHEY 15","status":"LANÇAMENTO","nome":"SHAKE 15 100% WHEY MORANGO 250ML","descricao_original":"SHAKE 15 100% WHEY MORANGO VC 250ML CX 12","un_cx":12,"preco_st":71.25,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/07/Shake-Natural-Whey-Morango-100_.png"},{"codigo":"80.878.0008","sap":"2174275133","ean":"7898205925647","categoria":"SOBREMESA","subcategoria":"BICAMADA","linha":"BICAMADA","secao":"SOBREMESA (CAIXA COM 12 UNIDADES)","status":"","nome":"SOBREMESA BANANA E CANELA 200G","descricao_original":"SOBREMESA BANANA E CANELA 200G VC CX 12","un_cx":12,"preco_st":83.62,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/10/SOBREMESA-BananaCanela.png"},{"codigo":"80.878.0007","sap":"2174275019","ean":"7898205925630","categoria":"SOBREMESA","subcategoria":"BICAMADA","linha":"BICAMADA","secao":"SOBREMESA (CAIXA COM 12 UNIDADES)","status":"","nome":"SOBREMESA FRUTAS VERMELHAS 200G","descricao_original":"SOBREMESA FRUTAS VERMELHAS 200G VC CX 12","un_cx":12,"preco_st":83.62,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2024/10/41413-MOCKUP-SOBREMESA-CREMOSA-FRUTAS-VERMELHAS-SEM-LACTOSE_AF02.png"},{"codigo":"80.878.0012","sap":"","ean":"7898205925821","categoria":"SOBREMESA","subcategoria":"PROTEICA","linha":"PROTEICA","secao":"SOBREMESA (CAIXA COM 12 UNIDADES)","status":"LANÇAMENTO","nome":"SOBREMESA PROTEICA CHOCOLATE 130G","descricao_original":"SOBREMESA PROTEICA CHOCOLATE 130G VC CX 12","un_cx":12,"preco_st":84.53,"unidade":"CX","peso_kg":0,"imagem":"https://admin.verdecampo.com.br/wp-content/uploads/2025/10/VCNW_Sobremesa-1-1.png"}];
 let PRODUCTS = [...DEFAULT_PRODUCTS];
@@ -575,13 +575,144 @@ const exportPedidoStyled = (pedido, cliente, vendedor) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+// ---- Bonification calculation ----
+const calcBonifItem = (item) => {
+  const p = findProduct(item.codigo);
+  if (!p) return { valor: 0, isKg: false, unid: 'CX' };
+  const qtd = parseFloat(item.qtd) || 0;
+  const isKg = p.unidade === 'KG' && p.peso_kg > 0;
+  // Valor = qtd (cx ou kg) × preço. Para kg, preço já é R$/kg. Para cx, preço é R$/cx.
+  const valor = isKg ? qtd * p.preco_st : qtd * p.preco_st;
+  return { valor, isKg, unid: isKg ? 'KG' : 'CX' };
+};
+
+const calcBonifTotal = (items) => {
+  return items.reduce((sum, item) => sum + calcBonifItem(item).valor, 0);
+};
+
+// ---- Bonification Export (styled, matches official template) ----
+const exportBonificacao = (bonif, cliente, vendedor, supervisor) => {
+  const VC_DARK = '#375F5C';
+  const items = bonif.items || [];
+  const totalBonif = calcBonifTotal(items);
+  const valorPedido = parseFloat(bonif.valorPedido) || 0;
+  const mediaRSL = parseFloat(bonif.mediaRSL) || 0;
+
+  let html = '\ufeff<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+  html += `<head><meta charset="UTF-8">
+<!--[if gte mso 9]><xml>
+<x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>Bonificação</x:Name>
+<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
+</xml><![endif]-->
+<style>
+  table { border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 10pt; }
+  td { border: 1px solid #999; padding: 4px 6px; vertical-align: middle; }
+  .title { background: ${VC_DARK} !important; color: #ffffff !important; font-weight: bold; font-size: 14pt; text-align: center; padding: 10px; }
+  .thead { background: ${VC_DARK} !important; color: #ffffff !important; font-weight: bold; text-align: center; padding: 6px 4px; font-size: 9pt; }
+  .label { background: #ededed !important; font-weight: bold; padding: 4px 8px; }
+  .value { padding: 4px 8px; }
+  .money { text-align: right; }
+  .center { text-align: center; }
+  .left { text-align: left; }
+  .pct { text-align: center; }
+</style></head><body>
+<table>
+<colgroup>
+  <col style="width: 130pt;"><col style="width: 110pt;"><col style="width: 70pt;">
+  <col style="width: 80pt;"><col style="width: 130pt;"><col style="width: 250pt;">
+  <col style="width: 110pt;"><col style="width: 90pt;"><col style="width: 70pt;">
+  <col style="width: 55pt;"><col style="width: 90pt;"><col style="width: 80pt;"><col style="width: 80pt;">
+</colgroup>`;
+
+  html += `<tr><td colspan="13" class="title">PLANILHA DE AUTORIZAÇÃO E LANÇAMENTOS DOS PEDIDOS DE BONIFICAÇÃO E DEGUSTAÇÃO</td></tr>`;
+  html += `<tr><td colspan="13" style="border:none;height:6pt;"></td></tr>`;
+
+  // Info header block
+  html += `<tr>
+    <td class="label">Nº Pedido Venda</td><td class="value center">${escapeHtml(bonif.numeroPedido || '-')}</td>
+    <td class="label">Valor Pedido Venda</td><td class="value money">${valorPedido > 0 ? formatBRLPlain(valorPedido) : '-'}</td>
+    <td class="label">Média RSL (3 meses)</td><td class="value money">${mediaRSL > 0 ? formatBRLPlain(mediaRSL) : '-'}</td>
+    <td class="label">Total Bonificação</td><td class="value money" style="font-weight:bold;">${formatBRLPlain(totalBonif)}</td>
+    <td colspan="5" style="border:none;"></td>
+  </tr>`;
+  html += `<tr><td colspan="13" style="border:none;height:6pt;"></td></tr>`;
+
+  // Table header
+  html += `<tr>
+    <td class="thead">Supervisor</td>
+    <td class="thead">Vendedor</td>
+    <td class="thead">Data</td>
+    <td class="thead">Cod Cliente</td>
+    <td class="thead">Rede</td>
+    <td class="thead">Nome Fantasia</td>
+    <td class="thead">Motivo da Bonificação</td>
+    <td class="thead">Produto</td>
+    <td class="thead">Cod Produto</td>
+    <td class="thead">Qtd</td>
+    <td class="thead">Unid Venda</td>
+    <td class="thead">Valor Bonificação</td>
+    <td class="thead">Bonif vs Pedido</td>
+  </tr>`;
+
+  // Item rows
+  items.forEach(item => {
+    const p = findProduct(item.codigo);
+    if (!p) return;
+    const c = calcBonifItem(item);
+    const bonifVsPedido = valorPedido > 0 ? (c.valor / valorPedido) : 0;
+    html += `<tr>
+      <td class="center">${escapeHtml(supervisor || '-')}</td>
+      <td class="center">${escapeHtml(vendedor?.nome || '-')}</td>
+      <td class="center">${formatDate(bonif.data)}</td>
+      <td class="center">${escapeHtml(cliente?.codCliente || cliente?.cnpj || '-')}</td>
+      <td class="left">${escapeHtml(cliente?.rede || '-')}</td>
+      <td class="left">${escapeHtml(cliente?.nomeFantasia || cliente?.razaoSocial || '-')}</td>
+      <td class="left">${escapeHtml(bonif.motivo || '-')}</td>
+      <td class="left">${escapeHtml(p.descricao_original || p.nome)}</td>
+      <td class="center">${escapeHtml(p.codigo)}</td>
+      <td class="center">${item.qtd}</td>
+      <td class="center">${c.unid}</td>
+      <td class="money">${formatBRLPlain(c.valor)}</td>
+      <td class="pct">${valorPedido > 0 ? (bonifVsPedido * 100).toFixed(1) + '%' : '-'}</td>
+    </tr>`;
+  });
+
+  // Total row
+  html += `<tr><td colspan="13" style="border:none;height:4pt;"></td></tr>`;
+  html += `<tr>
+    <td colspan="11" class="label" style="text-align:right;">TOTAL DA BONIFICAÇÃO</td>
+    <td class="money" style="background:${VC_DARK} !important;color:#fff !important;font-weight:bold;">${formatBRLPlain(totalBonif)}</td>
+    <td class="pct" style="background:${VC_DARK} !important;color:#fff !important;font-weight:bold;">${valorPedido > 0 ? ((totalBonif / valorPedido) * 100).toFixed(1) + '%' : '-'}</td>
+  </tr>`;
+
+  html += `</table></body></html>`;
+
+  const clienteName = (cliente?.nomeFantasia || cliente?.razaoSocial || 'Cliente').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
+  const filename = `Bonificacao_${clienteName}_${todayISO().replace(/-/g, '')}.xls`;
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 // ============== MAIN APP ==============
 export default function App() {
   const [tab, setTab] = useState('pedido');
   const [clientes, setClientes] = useState([]);
   const [vendedor, setVendedor] = useState({ nome: '', telefone: '', email: '' });
+  const [supervisor, setSupervisor] = useState('Estela');
   const [pedidoAtual, setPedidoAtual] = useState({ id: uid(), numero: '', data: todayISO(), clienteId: null, items: [], obs: '' });
   const [pedidos, setPedidos] = useState([]);
+  const [bonificacoes, setBonificacoes] = useState([]);
+  const [bonifSeed, setBonifSeed] = useState(null); // pre-fill data when generating from a pedido
   const [loaded, setLoaded] = useState(false);
   const [catVersion, setCatVersion] = useState(0);
   const [catMeta, setCatMeta] = useState({ source: 'default', updatedAt: null, filename: '' });
@@ -597,16 +728,20 @@ export default function App() {
       await loadCustomImages();
       setClientes(await store.get('clientes', []));
       setVendedor(await store.get('vendedor', { nome: '', telefone: '', email: '' }));
+      setSupervisor(await store.get('supervisor', 'Estela'));
       setPedidoAtual(await store.get('pedidoAtual', { id: uid(), numero: '', data: todayISO(), clienteId: null, items: [], obs: '' }));
       setPedidos(await store.get('pedidos', []));
+      setBonificacoes(await store.get('bonificacoes', []));
       setLoaded(true);
     })();
   }, []);
 
   useEffect(() => { if (loaded) store.set('clientes', clientes); }, [clientes, loaded]);
   useEffect(() => { if (loaded) store.set('vendedor', vendedor); }, [vendedor, loaded]);
+  useEffect(() => { if (loaded) store.set('supervisor', supervisor); }, [supervisor, loaded]);
   useEffect(() => { if (loaded) store.set('pedidoAtual', pedidoAtual); }, [pedidoAtual, loaded]);
   useEffect(() => { if (loaded) store.set('pedidos', pedidos); }, [pedidos, loaded]);
+  useEffect(() => { if (loaded) store.set('bonificacoes', bonificacoes); }, [bonificacoes, loaded]);
 
   const updateCatalog = async (newProducts, filename) => {
     PRODUCTS = newProducts;
@@ -654,12 +789,23 @@ export default function App() {
     exportPedidoStyled(pedidoComDataAtual, cliente, vendedor);
   };
 
+  const gerarBonificacaoDePedido = (pedido) => {
+    setBonifSeed({
+      clienteId: pedido.clienteSnapshot ? clientes.find(c => c.razaoSocial === pedido.clienteSnapshot.razaoSocial)?.id || null : null,
+      clienteSnapshot: pedido.clienteSnapshot,
+      numeroPedido: pedido.numero || '',
+      valorPedido: pedido.total ? pedido.total.toFixed(2) : '',
+    });
+    setTab('bonificacoes');
+  };
+
   const navItems = [
-    { id: 'pedido', label: 'Novo Pedido', icon: ShoppingCart },
-    { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
-    { id: 'clientes', label: 'Clientes', icon: Users },
-    { id: 'catalogo', label: 'Catálogo', icon: Package },
-    { id: 'config', label: 'Ajustes', icon: Settings }
+    { id: 'pedido', label: 'Novo Pedido', mobileLabel: 'Pedido', icon: ShoppingCart },
+    { id: 'pedidos', label: 'Pedidos', mobileLabel: 'Histórico', icon: ClipboardList },
+    { id: 'bonificacoes', label: 'Bonificações', mobileLabel: 'Bonif.', icon: Gift },
+    { id: 'clientes', label: 'Clientes', mobileLabel: 'Clientes', icon: Users },
+    { id: 'catalogo', label: 'Catálogo', mobileLabel: 'Catálogo', icon: Package },
+    { id: 'config', label: 'Ajustes', mobileLabel: 'Ajustes', icon: Settings }
   ];
 
   return (
@@ -699,10 +845,11 @@ export default function App() {
 
         <div className="max-w-5xl mx-auto">
           {tab === 'pedido' && <NovoPedidoView pedido={pedidoAtual} setPedido={setPedidoAtual} clientes={clientes} onFinalizar={finalizarPedido} onExportar={apenasExportar} catVersion={catVersion} />}
-          {tab === 'pedidos' && <PedidosView pedidos={pedidos} setPedidos={setPedidos} vendedor={vendedor} />}
+          {tab === 'pedidos' && <PedidosView pedidos={pedidos} setPedidos={setPedidos} vendedor={vendedor} onGerarBonificacao={gerarBonificacaoDePedido} />}
+          {tab === 'bonificacoes' && <BonificacoesView bonificacoes={bonificacoes} setBonificacoes={setBonificacoes} clientes={clientes} vendedor={vendedor} supervisor={supervisor} seed={bonifSeed} clearSeed={() => setBonifSeed(null)} catVersion={catVersion} />}
           {tab === 'clientes' && <ClientesView clientes={clientes} setClientes={setClientes} />}
           {tab === 'catalogo' && <CatalogoView catVersion={catVersion} />}
-          {tab === 'config' && <ConfigView vendedor={vendedor} setVendedor={setVendedor} setClientes={setClientes} setPedidos={setPedidos} setPedidoAtual={setPedidoAtual} catMeta={catMeta} onUpdateCatalog={updateCatalog} onResetCatalog={resetCatalog} catVersion={catVersion} />}
+          {tab === 'config' && <ConfigView vendedor={vendedor} setVendedor={setVendedor} supervisor={supervisor} setSupervisor={setSupervisor} setClientes={setClientes} setPedidos={setPedidos} setPedidoAtual={setPedidoAtual} catMeta={catMeta} onUpdateCatalog={updateCatalog} onResetCatalog={resetCatalog} catVersion={catVersion} />}
         </div>
       </main>
 
@@ -712,11 +859,11 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => setTab(item.id)}
-              className="flex-1 flex flex-col items-center gap-1 py-2 px-1"
+              className="flex-1 flex flex-col items-center gap-1 py-2 px-0.5"
               style={tab === item.id ? { color: VC_GREEN } : { color: '#78716c' }}
             >
-              <item.icon size={20} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <item.icon size={19} />
+              <span className="text-[9px] font-medium leading-tight text-center">{item.mobileLabel || item.label}</span>
             </button>
           ))}
         </div>
@@ -1178,7 +1325,7 @@ function ProductModal({ product, existing, onSave, onCancel, onRemove }) {
 }
 
 // ============== PEDIDOS (HISTÓRICO) ==============
-function PedidosView({ pedidos, setPedidos, vendedor }) {
+function PedidosView({ pedidos, setPedidos, vendedor, onGerarBonificacao }) {
   const [viewing, setViewing] = useState(null);
 
   return (
@@ -1216,6 +1363,7 @@ function PedidosView({ pedidos, setPedidos, vendedor }) {
           pedido={viewing}
           vendedor={vendedor}
           onClose={() => setViewing(null)}
+          onGerarBonificacao={() => { onGerarBonificacao(viewing); setViewing(null); }}
           onDelete={() => {
             if (confirm('Excluir este pedido do histórico?')) {
               setPedidos(pedidos.filter(p => p.id !== viewing.id));
@@ -1228,7 +1376,7 @@ function PedidosView({ pedidos, setPedidos, vendedor }) {
   );
 }
 
-function PedidoDetailModal({ pedido, vendedor, onClose, onDelete }) {
+function PedidoDetailModal({ pedido, vendedor, onClose, onDelete, onGerarBonificacao }) {
   return (
     <div className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4" onClick={onClose}>
       <div className="bg-white w-full md:max-w-lg rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
@@ -1263,6 +1411,14 @@ function PedidoDetailModal({ pedido, vendedor, onClose, onDelete }) {
             <span>Total</span>
             <span style={{ color: VC_GREEN }}>{formatBRL(pedido.total)}</span>
           </div>
+          <button
+            onClick={onGerarBonificacao}
+            className="w-full mt-3 px-3 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 border"
+            style={{ borderColor: VC_GREEN, color: VC_GREEN }}
+          >
+            <Gift size={14} />
+            Gerar bonificação a partir deste pedido
+          </button>
         </div>
         <div className="flex gap-2 p-4 border-t border-stone-200">
           <button onClick={onDelete} className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg">
@@ -1347,6 +1503,9 @@ function ClienteFormModal({ cliente, onSave, onDelete, onCancel }) {
   const [form, setForm] = useState({
     id: cliente.id,
     razaoSocial: cliente.razaoSocial || '',
+    nomeFantasia: cliente.nomeFantasia || '',
+    codCliente: cliente.codCliente || '',
+    rede: cliente.rede || '',
     cnpj: cliente.cnpj || '',
     ie: cliente.ie || '',
     telefone: cliente.telefone || '',
@@ -1369,6 +1528,11 @@ function ClienteFormModal({ cliente, onSave, onDelete, onCancel }) {
         </div>
         <div className="overflow-y-auto p-4 flex-1 space-y-3">
           <Field label="Razão Social *" value={form.razaoSocial} onChange={(v) => update('razaoSocial', v)} />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Nome Fantasia" value={form.nomeFantasia} onChange={(v) => update('nomeFantasia', v)} placeholder="Nome que aparece na loja" />
+            <Field label="Cód. Cliente (TOTVS)" value={form.codCliente} onChange={(v) => update('codCliente', v)} placeholder="Código no sistema VC" />
+          </div>
+          <Field label="Rede" value={form.rede} onChange={(v) => update('rede', v)} placeholder="Rede/grupo (se houver)" />
           <div className="grid grid-cols-2 gap-3">
             <Field label="CNPJ" value={form.cnpj} onChange={(v) => update('cnpj', v)} placeholder="00.000.000/0000-00" />
             <Field label="IE" value={form.ie} onChange={(v) => update('ie', v)} />
@@ -1419,6 +1583,336 @@ function Field({ label, value, onChange, type = 'text', placeholder = '' }) {
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2"
       />
+    </div>
+  );
+}
+
+// ============== BONIFICAÇÕES ==============
+function BonificacoesView({ bonificacoes, setBonificacoes, clientes, vendedor, supervisor, seed, clearSeed, catVersion }) {
+  const [editing, setEditing] = useState(null);
+
+  // If arriving with a seed (from a pedido), open the form pre-filled
+  useEffect(() => {
+    if (seed) {
+      setEditing({
+        id: null,
+        data: todayISO(),
+        clienteId: seed.clienteId || null,
+        clienteSnapshot: seed.clienteSnapshot || null,
+        numeroPedido: seed.numeroPedido || '',
+        valorPedido: seed.valorPedido || '',
+        mediaRSL: '',
+        motivo: '',
+        items: [],
+      });
+      clearSeed();
+    }
+  }, [seed]);
+
+  const salvar = (bonif) => {
+    if (bonif.id) {
+      setBonificacoes(bonificacoes.map(b => b.id === bonif.id ? bonif : b));
+    } else {
+      setBonificacoes([{ ...bonif, id: uid(), criadoEm: new Date().toISOString() }, ...bonificacoes]);
+    }
+    setEditing(null);
+  };
+
+  return (
+    <div className="px-4 md:px-6 py-4 md:py-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-stone-900 hidden md:block">Bonificações</h2>
+        <button
+          onClick={() => setEditing({ id: null, data: todayISO(), clienteId: null, numeroPedido: '', valorPedido: '', mediaRSL: '', motivo: '', items: [] })}
+          className="ml-auto inline-flex items-center gap-1.5 text-white text-sm font-medium px-3 py-2 rounded-lg"
+          style={{ backgroundColor: VC_GREEN }}
+        >
+          <Plus size={16} />
+          Nova Bonificação
+        </button>
+      </div>
+
+      {bonificacoes.length === 0 ? (
+        <div className="bg-white rounded-xl border border-stone-200 p-8 text-center">
+          <Gift size={36} className="mx-auto text-stone-300 mb-2" />
+          <p className="text-sm text-stone-500">Nenhuma bonificação registrada.</p>
+          <p className="text-xs text-stone-400 mt-1">Crie uma nova ou gere a partir de um pedido no histórico.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {bonificacoes.map(b => {
+            const totalB = calcBonifTotal(b.items || []);
+            const cli = b.clienteSnapshot || clientes.find(c => c.id === b.clienteId);
+            return (
+              <button key={b.id} onClick={() => setEditing(b)} className="w-full bg-white rounded-xl border border-stone-200 p-4 text-left hover:border-stone-300 transition-colors flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    {b.numeroPedido && <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ backgroundColor: VC_GREEN_BG, color: VC_GREEN }}>Ped. {b.numeroPedido}</span>}
+                    <span className="text-xs text-stone-500">{formatDate(b.data)}</span>
+                  </div>
+                  <div className="font-medium text-sm text-stone-900 truncate">{cli?.nomeFantasia || cli?.razaoSocial || 'Cliente'}</div>
+                  <div className="text-xs text-stone-500 mt-0.5 truncate">{(b.items || []).length} produto(s){b.motivo ? ` · ${b.motivo.slice(0, 40)}` : ''}</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="font-bold text-sm" style={{ color: VC_GREEN }}>{formatBRL(totalB)}</div>
+                  <ChevronRight size={16} className="text-stone-400 ml-auto mt-1" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {editing && (
+        <BonificacaoFormModal
+          bonif={editing}
+          clientes={clientes}
+          vendedor={vendedor}
+          supervisor={supervisor}
+          onSave={salvar}
+          onDelete={() => {
+            if (confirm('Excluir esta bonificação?')) {
+              setBonificacoes(bonificacoes.filter(b => b.id !== editing.id));
+              setEditing(null);
+            }
+          }}
+          onCancel={() => setEditing(null)}
+          catVersion={catVersion}
+        />
+      )}
+    </div>
+  );
+}
+
+function BonificacaoFormModal({ bonif, clientes, vendedor, supervisor, onSave, onDelete, onCancel, catVersion }) {
+  const [form, setForm] = useState({
+    id: bonif.id,
+    data: bonif.data || todayISO(),
+    clienteId: bonif.clienteId || null,
+    clienteSnapshot: bonif.clienteSnapshot || null,
+    numeroPedido: bonif.numeroPedido || '',
+    valorPedido: bonif.valorPedido || '',
+    mediaRSL: bonif.mediaRSL || '',
+    motivo: bonif.motivo || '',
+    items: bonif.items || [],
+  });
+  const [addingProduct, setAddingProduct] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const cliente = form.clienteSnapshot || clientes.find(c => c.id === form.clienteId);
+  const totalBonif = calcBonifTotal(form.items);
+  const valorPedidoNum = parseFloat(form.valorPedido) || 0;
+
+  const filtered = useMemo(() => {
+    const s = search.toLowerCase().trim();
+    if (!s) return PRODUCTS;
+    return PRODUCTS.filter(p => p.nome.toLowerCase().includes(s) || p.codigo.toLowerCase().includes(s));
+  }, [search, catVersion]);
+
+  const addBonifItem = (codigo, qtd) => {
+    const existing = form.items.findIndex(i => i.codigo === codigo);
+    if (existing >= 0) {
+      const items = [...form.items];
+      items[existing] = { codigo, qtd };
+      update('items', items);
+    } else {
+      update('items', [...form.items, { codigo, qtd }]);
+    }
+    setAddingProduct(false);
+    setSearch('');
+  };
+
+  const removeBonifItem = (codigo) => {
+    update('items', form.items.filter(i => i.codigo !== codigo));
+  };
+
+  const handleSalvar = () => {
+    if (!form.clienteId && !form.clienteSnapshot) return alert('Selecione um cliente.');
+    if (form.items.length === 0) return alert('Adicione ao menos um produto.');
+    if (!form.motivo.trim()) return alert('Preencha o motivo da bonificação.');
+    onSave(form);
+  };
+
+  const handleExportar = () => {
+    if (!cliente) return alert('Selecione um cliente.');
+    if (form.items.length === 0) return alert('Adicione ao menos um produto.');
+    if (!form.motivo.trim()) return alert('Preencha o motivo da bonificação.');
+    exportBonificacao(form, cliente, vendedor, supervisor);
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4" onClick={onCancel}>
+      <div className="bg-white w-full md:max-w-lg rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-stone-200">
+          <h3 className="font-semibold text-stone-900">{bonif.id ? 'Editar Bonificação' : 'Nova Bonificação'}</h3>
+          <button onClick={onCancel}><X size={20} /></button>
+        </div>
+
+        <div className="overflow-y-auto p-4 flex-1 space-y-3">
+          {/* Cliente */}
+          <div>
+            <label className="text-xs font-medium text-stone-600 mb-1 block">Cliente</label>
+            <select
+              value={form.clienteId || ''}
+              onChange={(e) => { update('clienteId', e.target.value || null); update('clienteSnapshot', null); }}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2"
+            >
+              <option value="">Selecionar cliente...</option>
+              {clientes.map(c => <option key={c.id} value={c.id}>{c.nomeFantasia || c.razaoSocial}</option>)}
+            </select>
+            {form.clienteSnapshot && !form.clienteId && (
+              <p className="text-[10px] text-amber-600 mt-1">Cliente do pedido: {form.clienteSnapshot.razaoSocial}. Selecione acima para vincular ao cadastro atual.</p>
+            )}
+          </div>
+
+          {/* Supervisor + Vendedor (read-only info) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-stone-600 mb-1 block">Supervisor</label>
+              <div className="px-3 py-2 border border-stone-200 rounded-lg text-sm bg-stone-50 text-stone-700">{supervisor || '—'}</div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-stone-600 mb-1 block">Vendedor</label>
+              <div className="px-3 py-2 border border-stone-200 rounded-lg text-sm bg-stone-50 text-stone-700">{vendedor?.nome || '—'}</div>
+            </div>
+          </div>
+
+          {/* Pedido info */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-medium text-stone-600 mb-1 block">Nº Pedido</label>
+              <input type="text" value={form.numeroPedido} onChange={(e) => update('numeroPedido', e.target.value)} placeholder="39200" className="w-full px-2 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-stone-600 mb-1 block">Valor Pedido</label>
+              <input type="number" step="0.01" value={form.valorPedido} onChange={(e) => update('valorPedido', e.target.value)} placeholder="0,00" className="w-full px-2 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-stone-600 mb-1 block">Média RSL</label>
+              <input type="number" step="0.01" value={form.mediaRSL} onChange={(e) => update('mediaRSL', e.target.value)} placeholder="opcional" className="w-full px-2 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2" />
+            </div>
+          </div>
+
+          {/* Motivo */}
+          <div>
+            <label className="text-xs font-medium text-stone-600 mb-1 block">Motivo da Bonificação *</label>
+            <textarea
+              value={form.motivo}
+              onChange={(e) => update('motivo', e.target.value)}
+              placeholder="Detalhe o máximo possível: campanha, degustação, recuperação de cliente, lançamento, etc."
+              rows={3}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2"
+            />
+          </div>
+
+          {/* Produtos bonificados */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-medium text-stone-600">Produtos Bonificados</label>
+              <button onClick={() => setAddingProduct(true)} className="text-xs font-medium inline-flex items-center gap-1" style={{ color: VC_GREEN }}>
+                <Plus size={12} /> Adicionar
+              </button>
+            </div>
+            {form.items.length === 0 ? (
+              <div className="text-center py-4 text-xs text-stone-400 border border-dashed border-stone-200 rounded-lg">
+                Nenhum produto. Toque em Adicionar.
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {form.items.map(item => {
+                  const p = findProduct(item.codigo);
+                  if (!p) return null;
+                  const c = calcBonifItem(item);
+                  return (
+                    <div key={item.codigo} className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-lg p-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-stone-900 truncate">{p.nome}</div>
+                        <div className="text-[10px] text-stone-500">{item.qtd} {c.unid} · {formatBRL(c.valor)}</div>
+                      </div>
+                      <button onClick={() => removeBonifItem(item.codigo)} className="text-red-500 hover:text-red-700"><Trash2 size={12} /></button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Totals */}
+          <div className="rounded-lg p-3 space-y-1" style={{ backgroundColor: VC_GREEN_BG }}>
+            <div className="flex justify-between text-sm font-bold" style={{ color: VC_GREEN }}>
+              <span>Total Bonificação</span>
+              <span>{formatBRL(totalBonif)}</span>
+            </div>
+            {valorPedidoNum > 0 && (
+              <div className="flex justify-between text-xs text-stone-600">
+                <span>Bonif vs Pedido</span>
+                <span>{((totalBonif / valorPedidoNum) * 100).toFixed(1)}%</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-2 p-4 border-t border-stone-200">
+          {bonif.id && (
+            <button onClick={onDelete} className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg">Excluir</button>
+          )}
+          <button onClick={handleSalvar} className="flex-1 px-3 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg">Salvar</button>
+          <button onClick={handleExportar} className="flex-1 px-3 py-2 text-sm font-semibold text-white rounded-lg flex items-center justify-center gap-1.5" style={{ backgroundColor: VC_GREEN }}>
+            <Download size={14} /> Baixar
+          </button>
+        </div>
+
+        {/* Add product sub-modal */}
+        {addingProduct && (
+          <div className="absolute inset-0 bg-white rounded-t-2xl md:rounded-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-stone-200">
+              <h4 className="font-semibold text-stone-900 text-sm">Adicionar produto</h4>
+              <button onClick={() => { setAddingProduct(false); setSearch(''); }}><X size={20} /></button>
+            </div>
+            <div className="p-3 border-b border-stone-100">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar produto..." className="w-full pl-9 pr-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2" autoFocus />
+              </div>
+            </div>
+            <div className="overflow-y-auto flex-1 p-2 space-y-1">
+              {filtered.map(p => (
+                <BonifProductRow key={p.codigo} product={p} onAdd={addBonifItem} existing={form.items.find(i => i.codigo === p.codigo)} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BonifProductRow({ product: p, onAdd, existing }) {
+  const [qtd, setQtd] = useState(existing?.qtd || 1);
+  const isKg = p.unidade === 'KG' && p.peso_kg > 0;
+  return (
+    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50">
+      <ProductImage product={p} size={36} />
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-medium text-stone-900 truncate">{p.nome}</div>
+        <div className="text-[10px] text-stone-500">{p.codigo} · {formatBRL(p.preco_st)}{isKg ? '/kg' : '/cx'}</div>
+      </div>
+      <input
+        type="number" min="0" step={isKg ? '0.1' : '1'} value={qtd}
+        onChange={(e) => setQtd(e.target.value)}
+        className="w-16 px-2 py-1 border border-stone-300 rounded text-sm text-center focus:outline-none focus:ring-2"
+      />
+      <span className="text-[10px] text-stone-500 w-5">{isKg ? 'kg' : 'cx'}</span>
+      <button
+        onClick={() => onAdd(p.codigo, parseFloat(qtd) || 0)}
+        disabled={!qtd || parseFloat(qtd) <= 0}
+        className="px-2 py-1 text-xs font-semibold text-white rounded disabled:opacity-40"
+        style={{ backgroundColor: VC_GREEN }}
+      >
+        {existing ? 'OK' : '+'}
+      </button>
     </div>
   );
 }
@@ -1540,20 +2034,21 @@ function CatalogoItem({ product: p }) {
 }
 
 // ============== CONFIG ==============
-function ConfigView({ vendedor, setVendedor, setClientes, setPedidos, setPedidoAtual, catMeta, onUpdateCatalog, onResetCatalog, catVersion }) {
+function ConfigView({ vendedor, setVendedor, supervisor, setSupervisor, setClientes, setPedidos, setPedidoAtual, catMeta, onUpdateCatalog, onResetCatalog, catVersion }) {
   return (
     <div className="px-4 md:px-6 py-4 md:py-6">
       <h2 className="text-xl font-semibold text-stone-900 mb-4 hidden md:block">Ajustes</h2>
 
       <div className="bg-white rounded-xl border border-stone-200 p-4 mb-4">
         <h3 className="font-semibold text-stone-900 text-sm mb-3">Dados do Vendedor</h3>
-        <p className="text-xs text-stone-500 mb-3">Esses dados aparecem na planilha do pedido. Deixa em branco se não quiser.</p>
+        <p className="text-xs text-stone-500 mb-3">Esses dados aparecem na planilha do pedido e na bonificação. Deixa em branco se não quiser.</p>
         <div className="space-y-3">
           <Field label="Nome" value={vendedor.nome} onChange={(v) => setVendedor({ ...vendedor, nome: v })} placeholder="Ex: Samuel ou nome do seu pai" />
           <div className="grid grid-cols-2 gap-3">
             <Field label="Telefone" value={vendedor.telefone} onChange={(v) => setVendedor({ ...vendedor, telefone: v })} />
             <Field label="E-mail" value={vendedor.email} onChange={(v) => setVendedor({ ...vendedor, email: v })} type="email" />
           </div>
+          <Field label="Supervisor (para bonificações)" value={supervisor} onChange={(v) => setSupervisor(v)} placeholder="Ex: Estela" />
         </div>
       </div>
 
