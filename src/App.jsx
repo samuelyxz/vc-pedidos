@@ -250,18 +250,82 @@ const proxyImage = (url, size = 240) => {
   return `https://wsrv.nl/?url=${stripped}&w=${size}&output=png`;
 };
 
-// ProductImage component with fallback to category icon
+// ---- Custom product images (uploaded by user, stored compressed) ----
+// Kept in a module-level cache mirrored to storage under key "product_images".
+let CUSTOM_IMAGES = {}; // { [codigo]: dataURL }
+
+async function loadCustomImages() {
+  CUSTOM_IMAGES = await store.get('product_images', {}) || {};
+  return CUSTOM_IMAGES;
+}
+
+async function saveCustomImage(codigo, dataUrl) {
+  CUSTOM_IMAGES = { ...CUSTOM_IMAGES, [codigo]: dataUrl };
+  await store.set('product_images', CUSTOM_IMAGES);
+}
+
+async function removeCustomImage(codigo) {
+  const next = { ...CUSTOM_IMAGES };
+  delete next[codigo];
+  CUSTOM_IMAGES = next;
+  await store.set('product_images', CUSTOM_IMAGES);
+}
+
+// Compress an uploaded image file to a small square-ish PNG data URL (~50-80KB)
+function compressImage(file, maxSize = 200) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        // Scale down so the largest side is maxSize
+        if (width > height) {
+          if (width > maxSize) { height = Math.round(height * maxSize / width); width = maxSize; }
+        } else {
+          if (height > maxSize) { width = Math.round(width * maxSize / height); height = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        // White background (products are usually on white)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        // Export as JPEG for smaller size
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ProductImage component: prefers custom uploaded image, then catalog URL, then icon
 function ProductImage({ product, size = 48, className = '' }) {
   const [failed, setFailed] = useState(false);
-  const hasImage = product?.imagem && !failed;
+  const custom = product ? CUSTOM_IMAGES[product.codigo] : null;
+  const hasCustom = !!custom;
+  const hasUrl = product?.imagem && !failed;
   const iconSize = size >= 48 ? 'text-2xl' : size >= 36 ? 'text-xl' : 'text-base';
-  
+
   return (
     <div
       className={`rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${className}`}
       style={{ width: size, height: size, backgroundColor: VC_GREEN_BG }}
     >
-      {hasImage ? (
+      {hasCustom ? (
+        <img
+          src={custom}
+          alt={product.nome}
+          className="w-full h-full object-contain"
+          loading="lazy"
+        />
+      ) : hasUrl ? (
         <img
           src={proxyImage(product.imagem, Math.max(120, size * 2))}
           alt={product.nome}
@@ -530,6 +594,7 @@ export default function App() {
       }
       const meta = await store.get('catalogo_meta', { source: 'default', updatedAt: null, filename: '' });
       setCatMeta(meta);
+      await loadCustomImages();
       setClientes(await store.get('clientes', []));
       setVendedor(await store.get('vendedor', { nome: '', telefone: '', email: '' }));
       setPedidoAtual(await store.get('pedidoAtual', { id: uid(), numero: '', data: todayISO(), clienteId: null, items: [], obs: '' }));
@@ -970,14 +1035,54 @@ function ProductModal({ product, existing, onSave, onCancel, onRemove }) {
   const [descPct, setDescPct] = useState(existing?.descPct || 0);
   const [isExtra, setIsExtra] = useState(existing?.isExtra || false);
   const [obs, setObs] = useState(existing?.obs || '');
+  const [imgTick, setImgTick] = useState(0); // force re-render after image change
+  const [imgBusy, setImgBusy] = useState(false);
+  const imgInputRef = useRef(null);
 
   const c = calcItem({ codigo: product.codigo, caixas, bonif, descPct });
+  const hasCustomImg = !!CUSTOM_IMAGES[product.codigo];
+
+  const handleImgFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Selecione um arquivo de imagem.'); return; }
+    setImgBusy(true);
+    try {
+      const dataUrl = await compressImage(file, 200);
+      await saveCustomImage(product.codigo, dataUrl);
+      setImgTick(t => t + 1);
+    } catch {
+      alert('Não consegui processar essa imagem. Tenta outra.');
+    }
+    setImgBusy(false);
+  };
+
+  const handleRemoveImg = async () => {
+    await removeCustomImage(product.codigo);
+    setImgTick(t => t + 1);
+  };
 
   return (
     <div className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4" onClick={onCancel}>
       <div className="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-xl p-5 max-h-[95vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-3 mb-4">
-          <ProductImage product={product} size={64} />
+          <div className="flex flex-col items-center gap-1">
+            <ProductImage key={imgTick} product={product} size={64} />
+            <input type="file" accept="image/*" ref={imgInputRef} onChange={handleImgFile} style={{ display: 'none' }} />
+            <button
+              onClick={() => imgInputRef.current?.click()}
+              disabled={imgBusy}
+              className="text-[10px] text-stone-500 hover:text-stone-800 disabled:opacity-50"
+            >
+              {imgBusy ? '...' : hasCustomImg ? 'Trocar' : 'Add foto'}
+            </button>
+            {hasCustomImg && !imgBusy && (
+              <button onClick={handleRemoveImg} className="text-[10px] text-red-500 hover:text-red-700 -mt-1">
+                Remover
+              </button>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-stone-900 text-sm leading-tight">{product.nome}</h3>
             <div className="text-xs text-stone-500 mt-1">
@@ -1363,27 +1468,72 @@ function CatalogoView({ catVersion }) {
 
       <div className="space-y-2">
         {filtered.map(p => (
-          <div key={p.codigo} className="bg-white rounded-xl border border-stone-200 p-3 flex items-center gap-3">
-            <ProductImage product={p} size={48} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-medium text-stone-900 text-sm">{p.nome}</span>
-                {p.status && (
-                  <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${p.status.toLowerCase().includes('lan') ? 'bg-blue-100 text-blue-700' : 'bg-stone-200 text-stone-600'}`}>
-                    {p.status.toLowerCase().includes('lan') ? 'LANÇ.' : 'DESCONT.'}
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-stone-500 mt-0.5">
-                TOTVS: {p.codigo}{p.sap ? ` · SAP: ${p.sap}` : ''} · {p.un_cx} un/cx{p.unidade === 'KG' && p.peso_kg ? ` (${p.peso_kg.toString().replace('.', ',')}kg)` : ''}
-              </div>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <div className="font-semibold text-sm" style={{ color: VC_GREEN }}>{formatBRL(p.preco_st)}</div>
-              {p.unidade === 'KG' && <div className="text-[10px] text-amber-700 font-medium">/kg</div>}
-            </div>
-          </div>
+          <CatalogoItem key={p.codigo} product={p} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function CatalogoItem({ product: p }) {
+  const [imgTick, setImgTick] = useState(0);
+  const [imgBusy, setImgBusy] = useState(false);
+  const imgInputRef = useRef(null);
+  const hasCustomImg = !!CUSTOM_IMAGES[p.codigo];
+
+  const handleImgFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Selecione um arquivo de imagem.'); return; }
+    setImgBusy(true);
+    try {
+      const dataUrl = await compressImage(file, 200);
+      await saveCustomImage(p.codigo, dataUrl);
+      setImgTick(t => t + 1);
+    } catch {
+      alert('Não consegui processar essa imagem. Tenta outra.');
+    }
+    setImgBusy(false);
+  };
+
+  const handleRemoveImg = async () => {
+    await removeCustomImage(p.codigo);
+    setImgTick(t => t + 1);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-stone-200 p-3 flex items-center gap-3">
+      <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+        <ProductImage key={imgTick} product={p} size={48} />
+        <input type="file" accept="image/*" ref={imgInputRef} onChange={handleImgFile} style={{ display: 'none' }} />
+        <button
+          onClick={() => imgInputRef.current?.click()}
+          disabled={imgBusy}
+          className="text-[9px] text-stone-400 hover:text-stone-700 disabled:opacity-50 leading-tight"
+        >
+          {imgBusy ? '...' : hasCustomImg ? 'trocar' : '+ foto'}
+        </button>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-medium text-stone-900 text-sm">{p.nome}</span>
+          {p.status && (
+            <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${p.status.toLowerCase().includes('lan') ? 'bg-blue-100 text-blue-700' : 'bg-stone-200 text-stone-600'}`}>
+              {p.status.toLowerCase().includes('lan') ? 'LANÇ.' : p.status.toLowerCase().includes('nov') ? 'NOVO' : 'DESCONT.'}
+            </span>
+          )}
+          {hasCustomImg && (
+            <button onClick={handleRemoveImg} className="text-[9px] text-red-400 hover:text-red-600">remover foto</button>
+          )}
+        </div>
+        <div className="text-xs text-stone-500 mt-0.5">
+          TOTVS: {p.codigo}{p.sap ? ` · SAP: ${p.sap}` : ''} · {p.un_cx} un/cx{p.unidade === 'KG' && p.peso_kg ? ` (${p.peso_kg.toString().replace('.', ',')}kg)` : ''}
+        </div>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <div className="font-semibold text-sm" style={{ color: VC_GREEN }}>{formatBRL(p.preco_st)}</div>
+        {p.unidade === 'KG' && <div className="text-[10px] text-amber-700 font-medium">/kg</div>}
       </div>
     </div>
   );
