@@ -10,6 +10,20 @@ const VC_GREEN_LIGHT = '#3D8C42';
 const VC_GREEN_BG = '#E8F5E9';
 
 // ---- Catalog parsing & merging ----
+
+// Infer category from product name when the table doesn't provide a Categoria column
+function inferCategoria(nome) {
+  const n = (nome || '').toUpperCase();
+  if (/\bSHAKE\b/.test(n)) return 'WHEY SHAKE';
+  if (/\bWHEY\b/.test(n)) return 'WHEY IOGURTE';
+  if (/\bSOBREMESA\b/.test(n)) return 'SOBREMESA';
+  if (/\bCREME DE LEITE\b/.test(n)) return 'CREME';
+  if (/\b(COTTAGE|REQUEIJAO|REQUEIJÃO|MANTEIGA|COALHADA|PASTA)\b/.test(n)) return 'PASTAS';
+  if (/\bQUEIJO\b/.test(n)) return 'QUEIJO';
+  if (/\b(IOG|IOGURTE|KEFIR|LACFREE|PROBIOTICO|PROBIÓTICO)\b/.test(n)) return 'IOGURTE';
+  return 'OUTROS';
+}
+
 async function parsePriceTable(file) {
   const buffer = await file.arrayBuffer();
   const wb = XLSX.read(buffer, { type: 'array' });
@@ -70,9 +84,10 @@ async function parsePriceTable(file) {
       .trim()
       .replace(/\s+/g, ' ');
 
+    const catFromCol = COL_CAT ? String(row[COL_CAT] || '').trim() : '';
     products.push({
       codigo,
-      categoria: COL_CAT ? String(row[COL_CAT] || '').trim() : '',
+      categoria: catFromCol || inferCategoria(nome),
       subcategoria: COL_SUB ? String(row[COL_SUB] || '').trim() : '',
       linha: COL_LINHA ? String(row[COL_LINHA] || '').trim() : '',
       descricao_original: descStr,
@@ -96,6 +111,10 @@ function mergeProducts(newList, oldList) {
     if (old) {
       return {
         ...p,
+        // Preserve richer classification from existing catalog when present
+        categoria: old.categoria || p.categoria,
+        subcategoria: old.subcategoria || p.subcategoria,
+        linha: old.linha || p.linha,
         sap: old.sap || '',
         ean: old.ean || '',
         secao: old.secao || p.linha || '',
@@ -107,6 +126,7 @@ function mergeProducts(newList, oldList) {
     }
     return {
       ...p,
+      categoria: p.categoria || inferCategoria(p.nome),
       sap: '',
       ean: '',
       secao: p.linha || 'NOVOS',
