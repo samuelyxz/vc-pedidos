@@ -41,8 +41,9 @@ export const calcBonifItem = (item) => {
   if (!p) return { valor: 0, isKg: false, unid: 'CX' };
   const qtd = parseFloat(item.qtd) || 0;
   const isKg = p.unidade === 'KG' && p.peso_kg > 0;
-  // Valor = qtd (cx ou kg) × preço. Para kg, preço já é R$/kg. Para cx, preço é R$/cx.
-  const valor = isKg ? qtd * p.preco_st : qtd * p.preco_st;
+  // Na bonificação a qtd já vem na unidade de venda do produto (kg p/ KG,
+  // caixas p/ CX) e preco_st casa com ela (R$/kg ou R$/caixa) — sem conversão.
+  const valor = qtd * p.preco_st;
   return { valor, isKg, unid: isKg ? 'KG' : 'CX' };
 };
 

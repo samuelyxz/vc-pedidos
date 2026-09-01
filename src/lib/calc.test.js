@@ -53,10 +53,9 @@ describe('calcBonifItem / calcBonifTotal — comportamento atual', () => {
     expect(calcBonifItem({ codigo: 'CX1', qtd: 3 }).valor).toBe(300);
   });
 
-  // NOTA: hoje o cálculo de KG na bonificação NÃO multiplica por peso_kg
-  // (o ternário em calcBonifItem tem os dois ramos iguais). Teste de
-  // caracterização — se isso for corrigido, atualizar a expectativa.
-  it('KG: quantidade × preço/kg, sem fator de peso (quirk conhecido)', () => {
+  // Na bonificação a qtd de produto KG já é digitada em kg (não em caixas),
+  // então é qtd_kg × preço/kg direto — sem multiplicar por peso_kg.
+  it('KG: quantidade (já em kg) × preço/kg', () => {
     expect(calcBonifItem({ codigo: 'KG1', qtd: 3 }).valor).toBe(150);
   });
 

@@ -13,6 +13,7 @@ import { store } from './lib/storage.js';
 import { calcOrder } from './lib/calc.js';
 import { exportPedidoStyled } from './lib/exportPedido.js';
 import { useCatalog } from './state/CatalogContext.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { NovoPedidoView } from './views/NovoPedidoView.jsx';
 import { PedidosView } from './views/PedidosView.jsx';
 import { ClientesView } from './views/ClientesView.jsx';
@@ -236,6 +237,7 @@ export default function App() {
         </header>
 
         <div className="max-w-5xl mx-auto">
+          <ErrorBoundary key={tab}>
           {tab === 'pedido' && (
             <NovoPedidoView
               pedido={pedidoAtual}
@@ -279,6 +281,7 @@ export default function App() {
               setPedidoAtual={setPedidoAtual}
             />
           )}
+          </ErrorBoundary>
         </div>
       </main>
 

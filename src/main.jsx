@@ -4,11 +4,14 @@ import './index.css';
 import App from './App.jsx';
 import './App.css';
 import { CatalogProvider } from './state/CatalogContext.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <CatalogProvider>
-      <App />
-    </CatalogProvider>
+    <ErrorBoundary>
+      <CatalogProvider>
+        <App />
+      </CatalogProvider>
+    </ErrorBoundary>
   </StrictMode>
 );
