@@ -3,6 +3,7 @@ import { Download, X, RefreshCw } from 'lucide-react';
 import { VC_GREEN } from '../lib/constants.js';
 import { gerarFichaCadastro, baixarFichaEmBranco } from '../lib/ficha.js';
 import { Field } from './Field.jsx';
+import { Modal } from './Modal.jsx';
 
 function Sec({ children }) {
   return (
@@ -124,14 +125,11 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
 
 
   return (
-    <div
-      className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4"
-      onClick={onClose}
+    <Modal
+      onClose={onClose}
+      ariaLabel="Ficha cadastral de cliente"
+      className="w-full md:max-w-2xl rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
     >
-      <div
-        className="bg-white w-full md:max-w-2xl rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between p-4 border-b border-stone-200">
           <h3 className="font-semibold text-stone-900">
             Ficha Cadastral de Cliente
@@ -335,8 +333,7 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
             {busy ? 'Gerando...' : 'Gerar Ficha'}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

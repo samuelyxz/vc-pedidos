@@ -11,6 +11,7 @@ import { formatBRL, formatDate } from '../lib/format.js';
 import { findProduct } from '../lib/catalog.js';
 import { calcItem } from '../lib/calc.js';
 import { exportPedidoStyled } from '../lib/exportPedido.js';
+import { Modal } from '../components/Modal.jsx';
 
 // ============== PEDIDOS (HISTÓRICO) ==============
 export function PedidosView({ pedidos, setPedidos, vendedor, onGerarBonificacao }) {
@@ -101,14 +102,11 @@ function PedidoDetailModal({
   onGerarBonificacao,
 }) {
   return (
-    <div
-      className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4"
-      onClick={onClose}
+    <Modal
+      onClose={onClose}
+      ariaLabel={`Pedido ${pedido.numero || ''}`}
+      className="w-full md:max-w-lg rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
     >
-      <div
-        className="bg-white w-full md:max-w-lg rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between p-4 border-b border-stone-200">
           <div>
             <h3 className="font-semibold text-stone-900">
@@ -187,7 +185,6 @@ function PedidoDetailModal({
             Baixar Planilha
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

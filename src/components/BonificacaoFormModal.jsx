@@ -7,6 +7,7 @@ import { calcBonifItem, calcBonifTotal } from '../lib/calc.js';
 import { exportBonificacao } from '../lib/exportBonificacao.js';
 import { useCatalog } from '../state/CatalogContext.jsx';
 import { ProductImage } from './ProductImage.jsx';
+import { Modal } from './Modal.jsx';
 
 export function BonificacaoFormModal({
   bonif,
@@ -86,14 +87,11 @@ export function BonificacaoFormModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4"
-      onClick={onCancel}
+    <Modal
+      onClose={onCancel}
+      ariaLabel={bonif.id ? 'Editar bonificação' : 'Nova bonificação'}
+      className="w-full md:max-w-lg rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
     >
-      <div
-        className="bg-white w-full md:max-w-lg rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between p-4 border-b border-stone-200">
           <h3 className="font-semibold text-stone-900">
             {bonif.id ? 'Editar Bonificação' : 'Nova Bonificação'}
@@ -350,8 +348,7 @@ export function BonificacaoFormModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }
 

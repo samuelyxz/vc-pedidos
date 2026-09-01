@@ -6,6 +6,7 @@ import { compressImage } from '../lib/images.js';
 import { calcItem } from '../lib/calc.js';
 import { useCatalog } from '../state/CatalogContext.jsx';
 import { ProductImage } from './ProductImage.jsx';
+import { Modal } from './Modal.jsx';
 
 export function ProductModal({ product, existing, onSave, onCancel, onRemove }) {
   const { customImages, setProductImage, removeProductImage } = useCatalog();
@@ -43,15 +44,12 @@ export function ProductModal({ product, existing, onSave, onCancel, onRemove }) 
   };
 
   return (
-    <div
-      className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4"
-      onClick={onCancel}
+    <Modal
+      onClose={onCancel}
+      ariaLabel={product.nome}
+      className="w-full md:max-w-md rounded-t-2xl md:rounded-xl p-5 max-h-[95vh] overflow-y-auto"
     >
-      <div
-        className="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-xl p-5 max-h-[95vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start gap-3 mb-4">
+      <div className="flex items-start gap-3 mb-4">
           <div className="flex flex-col items-center gap-1">
             <ProductImage product={product} size={64} />
             <input
@@ -260,7 +258,6 @@ export function ProductModal({ product, existing, onSave, onCancel, onRemove }) 
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
