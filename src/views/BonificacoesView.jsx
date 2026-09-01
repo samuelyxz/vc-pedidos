@@ -15,10 +15,25 @@ import {
   formatDate,
   todayISO,
 } from '../lib/format.js';
-import { PRODUCTS, findProduct } from '../lib/catalog.js';
+import { findProduct } from '../lib/catalog.js';
 import { calcBonifItem, calcBonifTotal } from '../lib/calc.js';
 import { exportBonificacao } from '../lib/exportBonificacao.js';
+import { useCatalog } from '../state/CatalogContext.jsx';
 import { ProductImage } from '../components/ProductImage.jsx';
+
+function bonifFromSeed(seed) {
+  return {
+    id: null,
+    data: todayISO(),
+    clienteId: seed.clienteId || null,
+    clienteSnapshot: seed.clienteSnapshot || null,
+    numeroPedido: seed.numeroPedido || '',
+    valorPedido: seed.valorPedido || '',
+    mediaRSL: '',
+    motivo: '',
+    items: [],
+  };
+}
 
 // ============== BONIFICAÇÕES ==============
 export function BonificacoesView({
@@ -27,29 +42,19 @@ export function BonificacoesView({
   clientes,
   vendedor,
   supervisor,
-  seed,
-  clearSeed,
-  catVersion,
+  initialSeed,
+  onConsumeSeed,
 }) {
-  const [editing, setEditing] = useState(null);
+  // Se chegou com um seed (gerado a partir de um pedido), já abre o form
+  // preenchido. O initializer roda a cada vez que a aba é aberta (o componente
+  // remonta na troca de aba).
+  const [editing, setEditing] = useState(() =>
+    initialSeed ? bonifFromSeed(initialSeed) : null
+  );
 
-  // If arriving with a seed (from a pedido), open the form pre-filled
   useEffect(() => {
-    if (seed) {
-      setEditing({
-        id: null,
-        data: todayISO(),
-        clienteId: seed.clienteId || null,
-        clienteSnapshot: seed.clienteSnapshot || null,
-        numeroPedido: seed.numeroPedido || '',
-        valorPedido: seed.valorPedido || '',
-        mediaRSL: '',
-        motivo: '',
-        items: [],
-      });
-      clearSeed();
-    }
-  }, [seed]);
+    if (initialSeed) onConsumeSeed();
+  }, [initialSeed, onConsumeSeed]);
 
   const salvar = (bonif) => {
     if (bonif.id) {
@@ -169,7 +174,6 @@ export function BonificacoesView({
             }
           }}
           onCancel={() => setEditing(null)}
-          catVersion={catVersion}
         />
       )}
     </div>
@@ -184,8 +188,8 @@ function BonificacaoFormModal({
   onSave,
   onDelete,
   onCancel,
-  catVersion,
 }) {
+  const { products } = useCatalog();
   const [form, setForm] = useState({
     id: bonif.id,
     data: bonif.data || todayISO(),
@@ -209,12 +213,12 @@ function BonificacaoFormModal({
 
   const filtered = useMemo(() => {
     const s = search.toLowerCase().trim();
-    if (!s) return PRODUCTS;
-    return PRODUCTS.filter(
+    if (!s) return products;
+    return products.filter(
       (p) =>
         p.nome.toLowerCase().includes(s) || p.codigo.toLowerCase().includes(s)
     );
-  }, [search, catVersion]);
+  }, [search, products]);
 
   const addBonifItem = (codigo, qtd) => {
     const existing = form.items.findIndex((i) => i.codigo === codigo);

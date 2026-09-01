@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { VC_GREEN_BG, CAT_ICONS } from '../lib/constants.js';
-import { proxyImage, CUSTOM_IMAGES } from '../lib/images.js';
+import { proxyImage } from '../lib/images.js';
+import { useCatalog } from '../state/CatalogContext.jsx';
 
 // ProductImage component: prefers custom uploaded image, then catalog URL, then icon
 export function ProductImage({ product, size = 48, className = '' }) {
+  const { customImages } = useCatalog();
   const [failed, setFailed] = useState(false);
-  const custom = product ? CUSTOM_IMAGES[product.codigo] : null;
+  const custom = product ? customImages[product.codigo] : null;
   const hasCustom = !!custom;
   const hasUrl = product?.imagem && !failed;
   const iconSize =

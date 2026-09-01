@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ShoppingCart,
   Users,
@@ -10,11 +10,9 @@ import {
 import { VC_GREEN } from './lib/constants.js';
 import { uid, todayISO } from './lib/format.js';
 import { store } from './lib/storage.js';
-import { DEFAULT_PRODUCTS } from './data/products.js';
-import { setProducts } from './lib/catalog.js';
-import { loadCustomImages } from './lib/images.js';
 import { calcOrder } from './lib/calc.js';
 import { exportPedidoStyled } from './lib/exportPedido.js';
+import { useCatalog } from './state/CatalogContext.jsx';
 import { NovoPedidoView } from './views/NovoPedidoView.jsx';
 import { PedidosView } from './views/PedidosView.jsx';
 import { ClientesView } from './views/ClientesView.jsx';
@@ -24,6 +22,7 @@ import { ConfigView } from './views/ConfigView.jsx';
 
 // ============== MAIN APP ==============
 export default function App() {
+  const { ready: catalogReady } = useCatalog();
   const [tab, setTab] = useState('pedido');
   const [clientes, setClientes] = useState([]);
   const [vendedor, setVendedor] = useState({
@@ -42,28 +41,13 @@ export default function App() {
   });
   const [pedidos, setPedidos] = useState([]);
   const [bonificacoes, setBonificacoes] = useState([]);
-  const [bonifSeed, setBonifSeed] = useState(null); // pre-fill data when generating from a pedido
+  // pré-preenche a bonificação gerada a partir de um pedido; a BonificacoesView
+  // consome no mount e chama consumeBonifSeed() pra limpar.
+  const [bonifSeed, setBonifSeed] = useState(null);
   const [loaded, setLoaded] = useState(false);
-  const [catVersion, setCatVersion] = useState(0);
-  const [catMeta, setCatMeta] = useState({
-    source: 'default',
-    updatedAt: null,
-    filename: '',
-  });
 
   useEffect(() => {
     (async () => {
-      const storedCat = await store.get('catalogo');
-      if (Array.isArray(storedCat) && storedCat.length > 0) {
-        setProducts(storedCat);
-      }
-      const meta = await store.get('catalogo_meta', {
-        source: 'default',
-        updatedAt: null,
-        filename: '',
-      });
-      setCatMeta(meta);
-      await loadCustomImages();
       setClientes(await store.get('clientes', []));
       setVendedor(
         await store.get('vendedor', { nome: '', telefone: '', email: '' })
@@ -104,29 +88,9 @@ export default function App() {
     if (loaded) store.set('bonificacoes', bonificacoes);
   }, [bonificacoes, loaded]);
 
-  const updateCatalog = async (newProducts, filename) => {
-    setProducts(newProducts);
-    const meta = {
-      source: 'upload',
-      updatedAt: new Date().toISOString(),
-      filename: filename || '',
-    };
-    setCatMeta(meta);
-    await store.set('catalogo', newProducts);
-    await store.set('catalogo_meta', meta);
-    setCatVersion((v) => v + 1);
-  };
+  const consumeBonifSeed = useCallback(() => setBonifSeed(null), []);
 
-  const resetCatalog = async () => {
-    setProducts([...DEFAULT_PRODUCTS]);
-    const meta = { source: 'default', updatedAt: null, filename: '' };
-    setCatMeta(meta);
-    await store.delete('catalogo');
-    await store.set('catalogo_meta', meta);
-    setCatVersion((v) => v + 1);
-  };
-
-  if (!loaded) {
+  if (!loaded || !catalogReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="text-stone-500 text-sm">Carregando...</div>
@@ -275,7 +239,6 @@ export default function App() {
               clientes={clientes}
               onFinalizar={finalizarPedido}
               onExportar={apenasExportar}
-              catVersion={catVersion}
             />
           )}
           {tab === 'pedidos' && (
@@ -293,15 +256,14 @@ export default function App() {
               clientes={clientes}
               vendedor={vendedor}
               supervisor={supervisor}
-              seed={bonifSeed}
-              clearSeed={() => setBonifSeed(null)}
-              catVersion={catVersion}
+              initialSeed={bonifSeed}
+              onConsumeSeed={consumeBonifSeed}
             />
           )}
           {tab === 'clientes' && (
             <ClientesView clientes={clientes} setClientes={setClientes} />
           )}
-          {tab === 'catalogo' && <CatalogoView catVersion={catVersion} />}
+          {tab === 'catalogo' && <CatalogoView />}
           {tab === 'config' && (
             <ConfigView
               vendedor={vendedor}
@@ -311,10 +273,6 @@ export default function App() {
               setClientes={setClientes}
               setPedidos={setPedidos}
               setPedidoAtual={setPedidoAtual}
-              catMeta={catMeta}
-              onUpdateCatalog={updateCatalog}
-              onResetCatalog={resetCatalog}
-              catVersion={catVersion}
             />
           )}
         </div>

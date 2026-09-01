@@ -15,8 +15,9 @@ import {
   CAT_ORDER,
 } from '../lib/constants.js';
 import { formatBRL } from '../lib/format.js';
-import { PRODUCTS, findProduct } from '../lib/catalog.js';
+import { findProduct } from '../lib/catalog.js';
 import { calcItem, calcOrder } from '../lib/calc.js';
+import { useCatalog } from '../state/CatalogContext.jsx';
 import { ProductImage } from '../components/ProductImage.jsx';
 import { ProductModal } from '../components/ProductModal.jsx';
 
@@ -27,8 +28,8 @@ export function NovoPedidoView({
   clientes,
   onFinalizar,
   onExportar,
-  catVersion,
 }) {
+  const { products } = useCatalog();
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('all');
   const [showOnlyOrdered, setShowOnlyOrdered] = useState(false);
@@ -40,7 +41,7 @@ export function NovoPedidoView({
 
   const filtered = useMemo(() => {
     const s = search.toLowerCase().trim();
-    return PRODUCTS.filter((p) => {
+    return products.filter((p) => {
       if (catFilter !== 'all' && p.categoria !== catFilter) return false;
       if (showOnlyOrdered && !pedido.items.find((i) => i.codigo === p.codigo))
         return false;
@@ -52,7 +53,7 @@ export function NovoPedidoView({
         p.subcategoria.toLowerCase().includes(s)
       );
     });
-  }, [search, catFilter, showOnlyOrdered, pedido.items, catVersion]);
+  }, [search, catFilter, showOnlyOrdered, pedido.items, products]);
 
   const addItem = (codigo, caixas, bonif, descPct, isExtra, obs) => {
     const existing = pedido.items.findIndex((i) => i.codigo === codigo);

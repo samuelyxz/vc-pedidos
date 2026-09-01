@@ -2,27 +2,23 @@ import { useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { VC_GREEN, VC_GREEN_BG } from '../lib/constants.js';
 import { formatBRL } from '../lib/format.js';
-import {
-  CUSTOM_IMAGES,
-  saveCustomImage,
-  removeCustomImage,
-  compressImage,
-} from '../lib/images.js';
+import { compressImage } from '../lib/images.js';
 import { calcItem } from '../lib/calc.js';
+import { useCatalog } from '../state/CatalogContext.jsx';
 import { ProductImage } from './ProductImage.jsx';
 
 export function ProductModal({ product, existing, onSave, onCancel, onRemove }) {
+  const { customImages, setProductImage, removeProductImage } = useCatalog();
   const [caixas, setCaixas] = useState(existing?.caixas || 1);
   const [bonif, setBonif] = useState(existing?.bonif || 0);
   const [descPct, setDescPct] = useState(existing?.descPct || 0);
   const [isExtra, setIsExtra] = useState(existing?.isExtra || false);
   const [obs, setObs] = useState(existing?.obs || '');
-  const [imgTick, setImgTick] = useState(0); // force re-render after image change
   const [imgBusy, setImgBusy] = useState(false);
   const imgInputRef = useRef(null);
 
   const c = calcItem({ codigo: product.codigo, caixas, bonif, descPct });
-  const hasCustomImg = !!CUSTOM_IMAGES[product.codigo];
+  const hasCustomImg = !!customImages[product.codigo];
 
   const handleImgFile = async (e) => {
     const file = e.target.files?.[0];
@@ -35,8 +31,7 @@ export function ProductModal({ product, existing, onSave, onCancel, onRemove }) 
     setImgBusy(true);
     try {
       const dataUrl = await compressImage(file, 200);
-      await saveCustomImage(product.codigo, dataUrl);
-      setImgTick((t) => t + 1);
+      await setProductImage(product.codigo, dataUrl);
     } catch {
       alert('Não consegui processar essa imagem. Tenta outra.');
     }
@@ -44,8 +39,7 @@ export function ProductModal({ product, existing, onSave, onCancel, onRemove }) 
   };
 
   const handleRemoveImg = async () => {
-    await removeCustomImage(product.codigo);
-    setImgTick((t) => t + 1);
+    await removeProductImage(product.codigo);
   };
 
   return (
@@ -59,7 +53,7 @@ export function ProductModal({ product, existing, onSave, onCancel, onRemove }) 
       >
         <div className="flex items-start gap-3 mb-4">
           <div className="flex flex-col items-center gap-1">
-            <ProductImage key={imgTick} product={product} size={64} />
+            <ProductImage product={product} size={64} />
             <input
               type="file"
               accept="image/*"

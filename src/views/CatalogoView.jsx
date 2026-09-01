@@ -2,23 +2,19 @@ import { useState, useMemo, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { VC_GREEN, CAT_ICONS, CAT_ORDER } from '../lib/constants.js';
 import { formatBRL } from '../lib/format.js';
-import { PRODUCTS } from '../lib/catalog.js';
-import {
-  CUSTOM_IMAGES,
-  saveCustomImage,
-  removeCustomImage,
-  compressImage,
-} from '../lib/images.js';
+import { compressImage } from '../lib/images.js';
+import { useCatalog } from '../state/CatalogContext.jsx';
 import { ProductImage } from '../components/ProductImage.jsx';
 
 // ============== CATÁLOGO ==============
-export function CatalogoView({ catVersion }) {
+export function CatalogoView() {
+  const { products } = useCatalog();
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('all');
 
   const filtered = useMemo(() => {
     const s = search.toLowerCase().trim();
-    return PRODUCTS.filter((p) => {
+    return products.filter((p) => {
       if (catFilter !== 'all' && p.categoria !== catFilter) return false;
       if (!s) return true;
       return (
@@ -27,16 +23,16 @@ export function CatalogoView({ catVersion }) {
         (p.sap && p.sap.includes(s))
       );
     });
-  }, [search, catFilter, catVersion]);
+  }, [search, catFilter, products]);
 
   const stats = useMemo(() => {
-    const total = PRODUCTS.length;
+    const total = products.length;
     const byCat = {};
-    PRODUCTS.forEach((p) => {
+    products.forEach((p) => {
       byCat[p.categoria] = (byCat[p.categoria] || 0) + 1;
     });
     return { total, byCat };
-  }, [catVersion]);
+  }, [products]);
 
   return (
     <div className="px-4 md:px-6 py-4 md:py-6">
@@ -101,10 +97,10 @@ export function CatalogoView({ catVersion }) {
 }
 
 function CatalogoItem({ product: p }) {
-  const [imgTick, setImgTick] = useState(0);
+  const { customImages, setProductImage, removeProductImage } = useCatalog();
   const [imgBusy, setImgBusy] = useState(false);
   const imgInputRef = useRef(null);
-  const hasCustomImg = !!CUSTOM_IMAGES[p.codigo];
+  const hasCustomImg = !!customImages[p.codigo];
 
   const handleImgFile = async (e) => {
     const file = e.target.files?.[0];
@@ -117,8 +113,7 @@ function CatalogoItem({ product: p }) {
     setImgBusy(true);
     try {
       const dataUrl = await compressImage(file, 200);
-      await saveCustomImage(p.codigo, dataUrl);
-      setImgTick((t) => t + 1);
+      await setProductImage(p.codigo, dataUrl);
     } catch {
       alert('Não consegui processar essa imagem. Tenta outra.');
     }
@@ -126,14 +121,13 @@ function CatalogoItem({ product: p }) {
   };
 
   const handleRemoveImg = async () => {
-    await removeCustomImage(p.codigo);
-    setImgTick((t) => t + 1);
+    await removeProductImage(p.codigo);
   };
 
   return (
     <div className="bg-white rounded-xl border border-stone-200 p-3 flex items-center gap-3">
       <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
-        <ProductImage key={imgTick} product={p} size={48} />
+        <ProductImage product={p} size={48} />
         <input
           type="file"
           accept="image/*"
