@@ -1,8 +1,9 @@
 import { store } from './storage.js';
 import { todayISO } from './format.js';
+import { getAllImages, putAllImages } from './imageStore.js';
 
-// Chaves que o app guarda no armazenamento local.
-export const BACKUP_KEYS = [
+// Chaves guardadas no localStorage.
+export const LOCAL_KEYS = [
   'clientes',
   'vendedor',
   'supervisor',
@@ -11,16 +12,21 @@ export const BACKUP_KEYS = [
   'bonificacoes',
   'catalogo',
   'catalogo_meta',
-  'product_images',
 ];
+
+// Tudo que um backup reconhece. `product_images` vive no IndexedDB, não no
+// localStorage, mas continua indo no mesmo .json para o backup ser completo.
+export const BACKUP_KEYS = [...LOCAL_KEYS, 'product_images'];
 
 // Monta o objeto de backup (formato "empacotado", valores já desserializados).
 export async function collectBackup() {
   const data = {};
-  for (const key of BACKUP_KEYS) {
+  for (const key of LOCAL_KEYS) {
     const v = await store.get(key, null);
     if (v !== null && v !== undefined) data[key] = v;
   }
+  const imgs = await getAllImages();
+  if (Object.keys(imgs).length) data.product_images = imgs;
   return {
     _app: 'vc-pedidos',
     _format: 1,
@@ -82,7 +88,11 @@ export function normalizeBackup(parsed) {
 export async function applyBackup(parsed) {
   const data = normalizeBackup(parsed);
   for (const [key, value] of Object.entries(data)) {
-    await store.set(key, value);
+    if (key === 'product_images') {
+      await putAllImages(value);
+    } else {
+      await store.set(key, value);
+    }
   }
   return Object.keys(data);
 }
