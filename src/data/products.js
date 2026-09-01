@@ -51,7 +51,7 @@ export const DEFAULT_PRODUCTS = [
     preco_st: 123.08,
     unidade: 'CX',
     peso_kg: 0,
-    imagem: '',
+    imagem: 'https://admin.verdecampo.com.br/wp-content/uploads/2026/06/VC_500_A2_Natural.png',
   },
   {
     codigo: '80.884.0005',
@@ -68,7 +68,7 @@ export const DEFAULT_PRODUCTS = [
     preco_st: 123.08,
     unidade: 'CX',
     peso_kg: 0,
-    imagem: '',
+    imagem: 'https://admin.verdecampo.com.br/wp-content/uploads/2026/06/VC_500_A2_com-Mel.png',
   },
   {
     codigo: '80.884.0006',
@@ -85,7 +85,7 @@ export const DEFAULT_PRODUCTS = [
     preco_st: 123.08,
     unidade: 'CX',
     peso_kg: 0,
-    imagem: '',
+    imagem: 'https://admin.verdecampo.com.br/wp-content/uploads/2026/07/VC_500_A2_Morango.png',
   },
   {
     codigo: '80.883.0005',
@@ -174,7 +174,7 @@ export const DEFAULT_PRODUCTS = [
     preco_st: 38.97,
     unidade: 'CX',
     peso_kg: 0,
-    imagem: '',
+    imagem: 'https://admin.verdecampo.com.br/wp-content/uploads/2018/11/7898205925449.png',
   },
   {
     codigo: '80.882.0019',
@@ -1019,7 +1019,7 @@ export const DEFAULT_PRODUCTS = [
     preco_st: 45.6,
     unidade: 'CX',
     peso_kg: 0,
-    imagem: '',
+    imagem: 'https://admin.verdecampo.com.br/wp-content/uploads/2020/08/37394-MOCKUP-NR-LINHA-KIDS-IOGURTE-KIDS-BANANA-E-MACA-170G_AF01.png',
   },
   {
     codigo: '80.881.0002',
@@ -1036,7 +1036,7 @@ export const DEFAULT_PRODUCTS = [
     preco_st: 45.6,
     unidade: 'CX',
     peso_kg: 0,
-    imagem: '',
+    imagem: 'https://admin.verdecampo.com.br/wp-content/uploads/2020/08/37392-MOCKUP-NR-LINHA-KIDS-IOGURTE-KIDS-MORANGO-170G_AF01.png',
   },
   {
     codigo: '80.833.0001',
@@ -1053,7 +1053,7 @@ export const DEFAULT_PRODUCTS = [
     preco_st: 111.85,
     unidade: 'CX',
     peso_kg: 0,
-    imagem: '',
+    imagem: 'https://admin.verdecampo.com.br/wp-content/uploads/2025/06/41406-COALHADA-SECA_AF02_MOCKUP-1-scaled.png',
   },
   {
     codigo: '80.801.0000',
@@ -1070,7 +1070,7 @@ export const DEFAULT_PRODUCTS = [
     preco_st: 143.08,
     unidade: 'CX',
     peso_kg: 0,
-    imagem: '',
+    imagem: 'https://admin.verdecampo.com.br/wp-content/uploads/2026/07/VC_200_Manteiga.png',
   },
   {
     codigo: '80.801.0001',
