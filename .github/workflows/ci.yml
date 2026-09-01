@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes (Vitest)
+        run: npm test
+
+      - name: Build de produção
+        run: npm run build
+
+      # Lint ainda tem 7 problemas pré-existentes (ligados ao singleton PRODUCTS /
+      # catVersion). Roda como informativo até o Tier 2 zerar isso — depois é só
+      # remover o `continue-on-error`.
+      - name: Lint (informativo)
+        run: npm run lint
+        continue-on-error: true
