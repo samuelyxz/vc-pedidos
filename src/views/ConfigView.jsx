@@ -1,7 +1,17 @@
 import { uid, todayISO } from '../lib/format.js';
+import { useToast } from '../state/ToastContext.jsx';
 import { Field } from '../components/Field.jsx';
 import { CatalogUpdateCard } from '../components/CatalogUpdateCard.jsx';
 import { BackupCard } from '../components/BackupCard.jsx';
+
+const emptyPedido = () => ({
+  id: uid(),
+  numero: '',
+  data: todayISO(),
+  clienteId: null,
+  items: [],
+  obs: '',
+});
 
 // ============== CONFIG ==============
 export function ConfigView({
@@ -13,6 +23,7 @@ export function ConfigView({
   setPedidos,
   setPedidoAtual,
 }) {
+  const { confirm } = useToast();
   return (
     <div className="px-4 md:px-6 py-4 md:py-6">
       <h2 className="text-xl font-semibold text-stone-900 mb-4 hidden md:block">
@@ -82,18 +93,14 @@ export function ConfigView({
         </p>
         <div className="flex flex-col gap-2">
           <button
-            onClick={() => {
+            onClick={async () => {
               if (
-                confirm('Limpar pedido atual? (clientes e histórico ficam)')
+                await confirm(
+                  'Limpar pedido atual? (clientes e histórico ficam)',
+                  { confirmText: 'Limpar', danger: true }
+                )
               ) {
-                setPedidoAtual({
-                  id: uid(),
-                  numero: '',
-                  data: todayISO(),
-                  clienteId: null,
-                  items: [],
-                  obs: '',
-                });
+                setPedidoAtual(emptyPedido());
               }
             }}
             className="text-xs text-stone-700 hover:bg-stone-100 py-1.5 px-2 rounded-lg text-left"
@@ -101,23 +108,17 @@ export function ConfigView({
             Limpar apenas o pedido atual
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (
-                confirm(
-                  'APAGAR TUDO: clientes, histórico, dados do vendedor e pedido atual. (O catálogo de produtos NÃO é afetado por essa ação.) Continuar?'
+                await confirm(
+                  'APAGAR TUDO: clientes, histórico, dados do vendedor e pedido atual. (O catálogo de produtos NÃO é afetado por essa ação.) Continuar?',
+                  { confirmText: 'Apagar tudo', danger: true }
                 )
               ) {
                 setClientes([]);
                 setPedidos([]);
                 setVendedor({ nome: '', telefone: '', email: '' });
-                setPedidoAtual({
-                  id: uid(),
-                  numero: '',
-                  data: todayISO(),
-                  clienteId: null,
-                  items: [],
-                  obs: '',
-                });
+                setPedidoAtual(emptyPedido());
               }
             }}
             className="text-xs text-red-600 hover:bg-red-50 py-1.5 px-2 rounded-lg text-left"

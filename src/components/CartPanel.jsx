@@ -3,6 +3,7 @@ import { VC_GREEN } from '../lib/constants.js';
 import { formatBRL } from '../lib/format.js';
 import { findProduct } from '../lib/catalog.js';
 import { calcItem, calcOrder } from '../lib/calc.js';
+import { useToast } from '../state/ToastContext.jsx';
 import { ProductImage } from './ProductImage.jsx';
 
 export function CartPanel({
@@ -15,6 +16,7 @@ export function CartPanel({
   onExportar,
   embedded,
 }) {
+  const { confirm } = useToast();
   const { total, totalCaixas, totalBonif } = calcOrder(pedido.items);
   return (
     <div
@@ -30,8 +32,8 @@ export function CartPanel({
         </h3>
         {pedido.items.length > 0 && (
           <button
-            onClick={() => {
-              if (confirm('Limpar o pedido atual?'))
+            onClick={async () => {
+              if (await confirm('Limpar o pedido atual?', { danger: true }))
                 setPedido({ ...pedido, items: [] });
             }}
             className="text-xs text-stone-500 hover:text-red-600"

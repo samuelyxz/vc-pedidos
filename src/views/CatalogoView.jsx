@@ -4,6 +4,7 @@ import { VC_GREEN, CAT_ICONS, CAT_ORDER } from '../lib/constants.js';
 import { formatBRL } from '../lib/format.js';
 import { compressImage } from '../lib/images.js';
 import { useCatalog } from '../state/CatalogContext.jsx';
+import { useToast } from '../state/ToastContext.jsx';
 import { ProductImage } from '../components/ProductImage.jsx';
 
 // ============== CATÁLOGO ==============
@@ -98,6 +99,7 @@ export function CatalogoView() {
 
 function CatalogoItem({ product: p }) {
   const { customImages, setProductImage, removeProductImage } = useCatalog();
+  const { notify } = useToast();
   const [imgBusy, setImgBusy] = useState(false);
   const imgInputRef = useRef(null);
   const hasCustomImg = !!customImages[p.codigo];
@@ -107,7 +109,7 @@ function CatalogoItem({ product: p }) {
     e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Selecione um arquivo de imagem.');
+      notify('Selecione um arquivo de imagem.', { type: 'error' });
       return;
     }
     setImgBusy(true);
@@ -115,7 +117,9 @@ function CatalogoItem({ product: p }) {
       const dataUrl = await compressImage(file, 200);
       await setProductImage(p.codigo, dataUrl);
     } catch {
-      alert('Não consegui processar essa imagem. Tenta outra.');
+      notify('Não consegui processar essa imagem. Tenta outra.', {
+        type: 'error',
+      });
     }
     setImgBusy(false);
   };

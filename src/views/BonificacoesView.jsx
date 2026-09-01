@@ -3,6 +3,7 @@ import { Plus, Gift, ChevronRight } from 'lucide-react';
 import { VC_GREEN, VC_GREEN_BG } from '../lib/constants.js';
 import { uid, formatBRL, formatDate, todayISO } from '../lib/format.js';
 import { calcBonifTotal } from '../lib/calc.js';
+import { useToast } from '../state/ToastContext.jsx';
 import { BonificacaoFormModal } from '../components/BonificacaoFormModal.jsx';
 
 function bonifFromSeed(seed) {
@@ -29,6 +30,7 @@ export function BonificacoesView({
   initialSeed,
   onConsumeSeed,
 }) {
+  const { confirm } = useToast();
   // Se chegou com um seed (gerado a partir de um pedido), já abre o form
   // preenchido. O initializer roda a cada vez que a aba é aberta (o componente
   // remonta na troca de aba).
@@ -151,8 +153,13 @@ export function BonificacoesView({
           vendedor={vendedor}
           supervisor={supervisor}
           onSave={salvar}
-          onDelete={() => {
-            if (confirm('Excluir esta bonificação?')) {
+          onDelete={async () => {
+            if (
+              await confirm('Excluir esta bonificação?', {
+                confirmText: 'Excluir',
+                danger: true,
+              })
+            ) {
               setBonificacoes(bonificacoes.filter((b) => b.id !== editing.id));
               setEditing(null);
             }

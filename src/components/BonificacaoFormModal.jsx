@@ -6,6 +6,7 @@ import { findProduct } from '../lib/catalog.js';
 import { calcBonifItem, calcBonifTotal } from '../lib/calc.js';
 import { exportBonificacao } from '../lib/exportBonificacao.js';
 import { useCatalog } from '../state/CatalogContext.jsx';
+import { useToast } from '../state/ToastContext.jsx';
 import { ProductImage } from './ProductImage.jsx';
 import { Modal } from './Modal.jsx';
 
@@ -19,6 +20,7 @@ export function BonificacaoFormModal({
   onCancel,
 }) {
   const { products } = useCatalog();
+  const { notify } = useToast();
   const [form, setForm] = useState({
     id: bonif.id,
     data: bonif.data || todayISO(),
@@ -69,20 +71,30 @@ export function BonificacaoFormModal({
     );
   };
 
+  const validar = () => {
+    if (!cliente) {
+      notify('Selecione um cliente.', { type: 'error' });
+      return false;
+    }
+    if (form.items.length === 0) {
+      notify('Adicione ao menos um produto.', { type: 'error' });
+      return false;
+    }
+    if (!form.motivo.trim()) {
+      notify('Preencha o motivo da bonificação.', { type: 'error' });
+      return false;
+    }
+    return true;
+  };
+
   const handleSalvar = () => {
-    if (!form.clienteId && !form.clienteSnapshot)
-      return alert('Selecione um cliente.');
-    if (form.items.length === 0) return alert('Adicione ao menos um produto.');
-    if (!form.motivo.trim()) return alert('Preencha o motivo da bonificação.');
-    onSave(form);
+    if (validar()) onSave(form);
   };
 
   const handleExportar = () => {
-    if (!cliente) return alert('Selecione um cliente.');
-    if (form.items.length === 0) return alert('Adicione ao menos um produto.');
-    if (!form.motivo.trim()) return alert('Preencha o motivo da bonificação.');
+    if (!validar()) return;
     exportBonificacao(form, cliente, vendedor, supervisor).catch(() =>
-      alert('Não consegui gerar a planilha. Tente de novo.')
+      notify('Não consegui gerar a planilha. Tente de novo.', { type: 'error' })
     );
   };
 

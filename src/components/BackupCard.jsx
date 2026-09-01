@@ -2,8 +2,10 @@ import { useState, useRef } from 'react';
 import { Download, Upload, RefreshCw, AlertCircle } from 'lucide-react';
 import { VC_GREEN, VC_GREEN_BG } from '../lib/constants.js';
 import { downloadBackup, applyBackup } from '../lib/backup.js';
+import { useToast } from '../state/ToastContext.jsx';
 
 export function BackupCard() {
+  const { confirm } = useToast();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
@@ -33,13 +35,11 @@ export function BackupCard() {
     if (!file) return;
     setError('');
     setMsg('');
-    if (
-      !confirm(
-        'Importar vai SOBRESCREVER os clientes, pedidos, bonificações e catálogo deste navegador com o conteúdo do arquivo. Continuar?'
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm(
+      'Importar vai SOBRESCREVER os clientes, pedidos, bonificações e catálogo deste navegador com o conteúdo do arquivo. Continuar?',
+      { confirmText: 'Importar', danger: true }
+    );
+    if (!ok) return;
     setBusy(true);
     try {
       const parsed = JSON.parse(await file.text());

@@ -8,14 +8,17 @@ import {
 } from '@testing-library/react';
 import App from './App.jsx';
 import { CatalogProvider } from './state/CatalogContext.jsx';
+import { ToastProvider } from './state/ToastContext.jsx';
 
 afterEach(cleanup);
 
 const renderApp = () =>
   render(
-    <CatalogProvider>
-      <App />
-    </CatalogProvider>
+    <ToastProvider>
+      <CatalogProvider>
+        <App />
+      </CatalogProvider>
+    </ToastProvider>
   );
 
 // Smoke test: exercita todo o grafo de módulos (App -> views -> components -> lib)

@@ -11,10 +11,12 @@ import { formatBRL, formatDate } from '../lib/format.js';
 import { findProduct } from '../lib/catalog.js';
 import { calcItem } from '../lib/calc.js';
 import { exportPedidoStyled } from '../lib/exportPedido.js';
+import { useToast } from '../state/ToastContext.jsx';
 import { Modal } from '../components/Modal.jsx';
 
 // ============== PEDIDOS (HISTÓRICO) ==============
 export function PedidosView({ pedidos, setPedidos, vendedor, onGerarBonificacao }) {
+  const { confirm } = useToast();
   const [viewing, setViewing] = useState(null);
 
   return (
@@ -82,8 +84,13 @@ export function PedidosView({ pedidos, setPedidos, vendedor, onGerarBonificacao 
             onGerarBonificacao(viewing);
             setViewing(null);
           }}
-          onDelete={() => {
-            if (confirm('Excluir este pedido do histórico?')) {
+          onDelete={async () => {
+            if (
+              await confirm('Excluir este pedido do histórico?', {
+                confirmText: 'Excluir',
+                danger: true,
+              })
+            ) {
               setPedidos(pedidos.filter((p) => p.id !== viewing.id));
               setViewing(null);
             }
@@ -101,6 +108,7 @@ function PedidoDetailModal({
   onDelete,
   onGerarBonificacao,
 }) {
+  const { notify } = useToast();
   return (
     <Modal
       onClose={onClose}
@@ -175,7 +183,10 @@ function PedidoDetailModal({
           <button
             onClick={() =>
               exportPedidoStyled(pedido, pedido.clienteSnapshot, vendedor).catch(
-                () => alert('Não consegui gerar a planilha. Tente de novo.')
+                () =>
+                  notify('Não consegui gerar a planilha. Tente de novo.', {
+                    type: 'error',
+                  })
               )
             }
             className="flex-1 px-3 py-2 text-sm font-semibold text-white rounded-lg flex items-center justify-center gap-2"

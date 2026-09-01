@@ -7,12 +7,14 @@ import {
 } from 'lucide-react';
 import { VC_GREEN } from '../lib/constants.js';
 import { uid } from '../lib/format.js';
+import { useToast } from '../state/ToastContext.jsx';
 import { Field } from '../components/Field.jsx';
 import { FichaCadastralModal } from '../components/FichaCadastralModal.jsx';
 import { Modal } from '../components/Modal.jsx';
 
 // ============== CLIENTES ==============
 export function ClientesView({ clientes, setClientes }) {
+  const { confirm } = useToast();
   const [editing, setEditing] = useState(null);
 
   return (
@@ -72,8 +74,13 @@ export function ClientesView({ clientes, setClientes }) {
             }
             setEditing(null);
           }}
-          onDelete={() => {
-            if (confirm('Excluir este cliente?')) {
+          onDelete={async () => {
+            if (
+              await confirm('Excluir este cliente?', {
+                confirmText: 'Excluir',
+                danger: true,
+              })
+            ) {
               setClientes(clientes.filter((x) => x.id !== editing.id));
               setEditing(null);
             }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Download, X, RefreshCw } from 'lucide-react';
 import { VC_GREEN } from '../lib/constants.js';
 import { gerarFichaCadastro, baixarFichaEmBranco } from '../lib/ficha.js';
+import { useToast } from '../state/ToastContext.jsx';
 import { Field } from './Field.jsx';
 import { Modal } from './Modal.jsx';
 
@@ -17,6 +18,7 @@ function Sec({ children }) {
 }
 
 export function FichaCadastralModal({ clienteInicial, onClose }) {
+  const { notify } = useToast();
   const seed = clienteInicial || {};
   const [form, setForm] = useState({
     cnpj: seed.cnpj || '',
@@ -101,8 +103,10 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
   };
 
   const gerar = async () => {
-    if (!form.razaoSocial.trim())
-      return alert('Preencha ao menos a Razão Social.');
+    if (!form.razaoSocial.trim()) {
+      notify('Preencha ao menos a Razão Social.', { type: 'error' });
+      return;
+    }
     setBusy(true);
     try {
       const blob = await gerarFichaCadastro(form);
@@ -118,7 +122,7 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
-      alert('Erro ao gerar a ficha. Tente novamente.');
+      notify('Erro ao gerar a ficha. Tente novamente.', { type: 'error' });
     }
     setBusy(false);
   };
