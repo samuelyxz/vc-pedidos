@@ -176,7 +176,9 @@ function PedidoDetailModal({
           </button>
           <button
             onClick={() =>
-              exportPedidoStyled(pedido, pedido.clienteSnapshot, vendedor)
+              exportPedidoStyled(pedido, pedido.clienteSnapshot, vendedor).catch(
+                () => alert('Não consegui gerar a planilha. Tente de novo.')
+              )
             }
             className="flex-1 px-3 py-2 text-sm font-semibold text-white rounded-lg flex items-center justify-center gap-2"
             style={{ backgroundColor: VC_GREEN }}
