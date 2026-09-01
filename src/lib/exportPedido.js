@@ -3,24 +3,20 @@ import { findProduct } from './catalog.js';
 import { calcItem, calcOrder } from './calc.js';
 import { formatDate, todayISO } from './format.js';
 import { downloadBlob } from './download.js';
-
-const XLSX_MIME =
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+import {
+  XLSX_MIME,
+  FONT,
+  MONO,
+  BRL_FMT,
+  fill,
+  outline,
+  spacer,
+  bannerRow,
+  loadExcelJS,
+} from './xlsx.js';
 
 const NCOLS = 11;
 const COL_WIDTHS = [16, 15, 18, 44, 9, 9, 9, 12, 15, 9, 16];
-const FONT = { name: 'Calibri', size: 10 };
-const MONO = { name: 'Consolas', size: 9.5 };
-const BRL_FMT = '"R$" #,##0.00';
-
-const argb = (hex) => 'FF' + hex;
-const fill = (hex) => ({
-  type: 'pattern',
-  pattern: 'solid',
-  fgColor: { argb: argb(hex) },
-});
-const thin = { style: 'thin', color: { argb: 'FF777777' } };
-const BORDER = { top: thin, left: thin, bottom: thin, right: thin };
 
 const C = {
   dark: '2A2A2A',
@@ -33,31 +29,8 @@ const C = {
   muted: 'FF555555',
 };
 
-function outline(ws, r, c1 = 1, c2 = NCOLS) {
-  for (let c = c1; c <= c2; c++) ws.getCell(r, c).border = BORDER;
-}
-
-function banner(ws, text, bgHex, opts = {}) {
-  const row = ws.addRow([text]);
-  const r = row.number;
-  ws.mergeCells(r, 1, r, NCOLS);
-  const cell = ws.getCell(r, 1);
-  cell.font = {
-    ...FONT,
-    bold: true,
-    size: opts.size || 10,
-    color: { argb: opts.color || 'FFFFFFFF' },
-  };
-  cell.fill = fill(bgHex);
-  cell.alignment = { horizontal: opts.align || 'center', vertical: 'middle' };
-  outline(ws, r);
-  if (opts.height) row.height = opts.height;
-  return r;
-}
-
-function spacer(ws, height = 6) {
-  ws.addRow([]).height = height;
-}
+const box = (ws, r) => outline(ws, r, 1, NCOLS);
+const banner = (ws, text, bgHex, opts) => bannerRow(ws, NCOLS, text, bgHex, opts);
 
 function infoRow(ws, label1, val1, label2, val2, centerVal) {
   const row = ws.addRow([label1, val1, '', '', '', '', label2, val2]);
@@ -78,17 +51,15 @@ function infoRow(ws, label1, val1, label2, val2, centerVal) {
       horizontal: centerVal ? 'center' : 'left',
     };
   }
-  outline(ws, r);
+  box(ws, r);
 }
 
 export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
-  const ExcelJS = (await import('exceljs')).default;
+  const ExcelJS = await loadExcelJS();
   const wb = new ExcelJS.Workbook();
   wb.creator = 'VC Pedidos';
   wb.created = new Date();
-  const ws = wb.addWorksheet('Pedido', {
-    views: [{ showGridLines: false }],
-  });
+  const ws = wb.addWorksheet('Pedido', { views: [{ showGridLines: false }] });
   ws.columns = COL_WIDTHS.map((width) => ({ width }));
 
   // Agrupa itens por seção, na ordem do template
@@ -111,7 +82,6 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
   const { total, totalCaixas, totalBonif, totalKg } = calcOrder(pedido.items);
   const hasExtras = pedido.items.some((i) => i.isExtra);
 
-  // Cabeçalho
   banner(
     ws,
     `PEDIDO DE VENDA${pedido.numero ? ` — Nº ${pedido.numero}` : ''}`,
@@ -121,9 +91,16 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
   banner(ws, 'LATICÍNIOS VERDE CAMPO S.A.', C.dark2, { size: 10 });
   spacer(ws);
 
-  // Faixa de seção do bloco de dados
   {
-    const row = ws.addRow(['DADOS DO CLIENTE', '', '', '', '', '', 'DADOS DO PEDIDO']);
+    const row = ws.addRow([
+      'DADOS DO CLIENTE',
+      '',
+      '',
+      '',
+      '',
+      '',
+      'DADOS DO PEDIDO',
+    ]);
     const r = row.number;
     ws.mergeCells(r, 1, r, 6);
     ws.mergeCells(r, 7, r, NCOLS);
@@ -133,7 +110,7 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
       x.fill = fill(C.greyHeader);
       x.alignment = { horizontal: 'center', vertical: 'middle' };
     }
-    outline(ws, r);
+    box(ws, r);
   }
 
   const cidadeUf = cliente?.cidade
@@ -163,7 +140,6 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
   );
   spacer(ws);
 
-  // Cabeçalho da tabela de produtos
   {
     const headers = [
       'Cód. SAP',
@@ -186,10 +162,9 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
       x.fill = fill(C.dark);
       x.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     }
-    outline(ws, r);
+    box(ws, r);
   }
 
-  // Produtos por seção
   for (const section of sortedSections) {
     const row = ws.addRow([section]);
     const r = row.number;
@@ -198,7 +173,7 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
     x.font = { ...FONT, bold: true, size: 11 };
     x.fill = fill(C.greySection);
     x.alignment = { horizontal: 'left', vertical: 'middle' };
-    outline(ws, r);
+    box(ws, r);
 
     for (const { item, p } of grouped[section]) {
       const c = calcItem(item);
@@ -254,15 +229,16 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
       ws.getCell(r2, 11).font = { ...FONT, bold: true };
 
       if (item.isExtra) {
-        for (let col = 1; col <= NCOLS; col++) ws.getCell(r2, col).fill = fill(C.yellow);
+        for (let col = 1; col <= NCOLS; col++) {
+          ws.getCell(r2, col).fill = fill(C.yellow);
+        }
       }
-      outline(ws, r2);
+      box(ws, r2);
     }
   }
 
   spacer(ws, 4);
 
-  // Linha de totais
   {
     const summaryParts = [`Total de Caixas: ${totalCaixas}`];
     if (totalKg > 0) {
@@ -294,11 +270,10 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
     }
     ws.getCell(r, 5).value = 'TOTAL DO PEDIDO';
     ws.getCell(r, 11).numFmt = BRL_FMT;
-    outline(ws, r);
+    box(ws, r);
     row.height = 20;
   }
 
-  // Observações
   if (pedido.obs) {
     spacer(ws, 4);
     const row = ws.addRow(['Observações', pedido.obs]);
@@ -309,38 +284,25 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
     lbl.fill = fill(C.greyLabel);
     lbl.alignment = { vertical: 'middle' };
     ws.getCell(r, 2).alignment = { vertical: 'middle', wrapText: true };
-    outline(ws, r);
+    box(ws, r);
   }
 
-  // Nota de itens extras
   if (hasExtras) {
-    const r = banner(
+    banner(
       ws,
       'Itens destacados em amarelo claro são sugestões adicionadas ao pedido original do cliente.',
       C.footer,
-      { color: 'FF555555', align: 'left' }
+      { color: 'FF555555', align: 'left', italic: true, bold: false, size: 9 }
     );
-    ws.getCell(r, 1).font = {
-      name: 'Calibri',
-      size: 9,
-      italic: true,
-      color: { argb: 'FF555555' },
-    };
   }
 
   spacer(ws);
-  const r = banner(
+  banner(
     ws,
     'Fornecedor: LATICÍNIOS VERDE CAMPO S.A. · Av. Luiz Gomide, Lavras-MG · CNPJ: 07.757.005/0001-02 · Frete a pagar · Transportadora: __________',
     C.footer,
-    { color: 'FF555555', align: 'left' }
+    { color: 'FF555555', align: 'left', italic: true, size: 9 }
   );
-  ws.getCell(r, 1).font = {
-    name: 'Calibri',
-    size: 9,
-    italic: true,
-    color: { argb: 'FF555555' },
-  };
 
   return wb;
 }

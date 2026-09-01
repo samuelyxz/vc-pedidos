@@ -252,7 +252,9 @@ function BonificacaoFormModal({
     if (!cliente) return alert('Selecione um cliente.');
     if (form.items.length === 0) return alert('Adicione ao menos um produto.');
     if (!form.motivo.trim()) return alert('Preencha o motivo da bonificação.');
-    exportBonificacao(form, cliente, vendedor, supervisor);
+    exportBonificacao(form, cliente, vendedor, supervisor).catch(() =>
+      alert('Não consegui gerar a planilha. Tente de novo.')
+    );
   };
 
   return (
