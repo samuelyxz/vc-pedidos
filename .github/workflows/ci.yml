@@ -23,6 +23,9 @@ jobs:
       - name: Testes (Vitest)
         run: npm test
 
+      - name: Typecheck (tsc --checkJs)
+        run: npm run typecheck
+
       - name: Build de produção
         run: npm run build
 

@@ -14,7 +14,7 @@ export function CartPanel({
   onEdit,
   onFinalizar,
   onExportar,
-  embedded,
+  embedded = false,
 }) {
   const { confirm } = useToast();
   const { total, totalCaixas, totalBonif } = calcOrder(pedido.items);

@@ -39,7 +39,7 @@ export function compressImage(file, maxSize = 200) {
         resolve(dataUrl);
       };
       img.onerror = reject;
-      img.src = e.target.result;
+      img.src = /** @type {string} */ (e.target.result);
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);

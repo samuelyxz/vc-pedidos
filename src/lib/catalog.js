@@ -1,8 +1,13 @@
 import * as XLSX from 'xlsx';
 import { DEFAULT_PRODUCTS } from '../data/products.js';
 
+/** @typedef {import('../types.js').Product} Product */
+
 // Singleton mutável do catálogo em uso (mesma semântica do `let` de módulo original).
+/** @type {Product[]} */
 export let PRODUCTS = [...DEFAULT_PRODUCTS];
+
+/** @param {Product[]} next */
 export function setProducts(next) {
   PRODUCTS = next;
 }
@@ -166,4 +171,6 @@ export function mergeProducts(newList, oldList) {
   });
 }
 
-export const findProduct = (codigo) => PRODUCTS.find((p) => p.codigo === codigo);
+/** @param {string} codigo @returns {Product | undefined} */
+export const findProduct = (codigo) =>
+  PRODUCTS.find((p) => p.codigo === codigo);

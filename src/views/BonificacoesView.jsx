@@ -6,6 +6,7 @@ import { calcBonifTotal } from '../lib/calc.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { BonificacaoFormModal } from '../components/BonificacaoFormModal.jsx';
 
+/** @returns {import('../types.js').Bonificacao} */
 function bonifFromSeed(seed) {
   return {
     id: null,

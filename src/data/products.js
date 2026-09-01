@@ -1,4 +1,5 @@
 // Catálogo embutido (tabela padrão SPI-T2S4). Editado só via nova importação de planilha.
+/** @type {import('../types.js').Product[]} */
 export const DEFAULT_PRODUCTS = [
   {
     codigo: '80.822.0003',
