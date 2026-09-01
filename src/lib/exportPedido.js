@@ -1,20 +1,104 @@
 import { SECAO_ORDER } from './constants.js';
 import { findProduct } from './catalog.js';
 import { calcItem, calcOrder } from './calc.js';
-import { formatDate, formatBRLPlain, formatKgPlain, escapeHtml, todayISO } from './format.js';
+import { formatDate, todayISO } from './format.js';
+import { downloadBlob } from './download.js';
 
-export const exportPedidoStyled = (pedido, cliente, vendedor) => {
-  // Group items by section
+const XLSX_MIME =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+const NCOLS = 11;
+const COL_WIDTHS = [16, 15, 18, 44, 9, 9, 9, 12, 15, 9, 16];
+const FONT = { name: 'Calibri', size: 10 };
+const MONO = { name: 'Consolas', size: 9.5 };
+const BRL_FMT = '"R$" #,##0.00';
+
+const argb = (hex) => 'FF' + hex;
+const fill = (hex) => ({
+  type: 'pattern',
+  pattern: 'solid',
+  fgColor: { argb: argb(hex) },
+});
+const thin = { style: 'thin', color: { argb: 'FF777777' } };
+const BORDER = { top: thin, left: thin, bottom: thin, right: thin };
+
+const C = {
+  dark: '2A2A2A',
+  dark2: '3A3A3A',
+  greyLabel: 'EDEDED',
+  greySection: 'C8C8C8',
+  greyHeader: 'D9D9D9',
+  yellow: 'FFF5CC',
+  footer: 'F5F5F5',
+  muted: 'FF555555',
+};
+
+function outline(ws, r, c1 = 1, c2 = NCOLS) {
+  for (let c = c1; c <= c2; c++) ws.getCell(r, c).border = BORDER;
+}
+
+function banner(ws, text, bgHex, opts = {}) {
+  const row = ws.addRow([text]);
+  const r = row.number;
+  ws.mergeCells(r, 1, r, NCOLS);
+  const cell = ws.getCell(r, 1);
+  cell.font = {
+    ...FONT,
+    bold: true,
+    size: opts.size || 10,
+    color: { argb: opts.color || 'FFFFFFFF' },
+  };
+  cell.fill = fill(bgHex);
+  cell.alignment = { horizontal: opts.align || 'center', vertical: 'middle' };
+  outline(ws, r);
+  if (opts.height) row.height = opts.height;
+  return r;
+}
+
+function spacer(ws, height = 6) {
+  ws.addRow([]).height = height;
+}
+
+function infoRow(ws, label1, val1, label2, val2, centerVal) {
+  const row = ws.addRow([label1, val1, '', '', '', '', label2, val2]);
+  const r = row.number;
+  ws.mergeCells(r, 2, r, 6);
+  ws.mergeCells(r, 8, r, NCOLS);
+  for (const c of [1, 7]) {
+    const x = ws.getCell(r, c);
+    x.font = { ...FONT, bold: true };
+    x.fill = fill(C.greyLabel);
+    x.alignment = { vertical: 'middle' };
+  }
+  for (const c of [2, 8]) {
+    const x = ws.getCell(r, c);
+    x.font = FONT;
+    x.alignment = {
+      vertical: 'middle',
+      horizontal: centerVal ? 'center' : 'left',
+    };
+  }
+  outline(ws, r);
+}
+
+export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
+  const ExcelJS = (await import('exceljs')).default;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'VC Pedidos';
+  wb.created = new Date();
+  const ws = wb.addWorksheet('Pedido', {
+    views: [{ showGridLines: false }],
+  });
+  ws.columns = COL_WIDTHS.map((width) => ({ width }));
+
+  // Agrupa itens por seção, na ordem do template
   const grouped = {};
   pedido.items.forEach((item) => {
     const p = findProduct(item.codigo);
     if (!p) return;
     const sect = p.secao || 'OUTROS';
-    if (!grouped[sect]) grouped[sect] = [];
-    grouped[sect].push({ item, p });
+    (grouped[sect] ||= []).push({ item, p });
   });
-
-  // Sort sections by template order
   const sortedSections = Object.keys(grouped).sort((a, b) => {
     const ia = SECAO_ORDER.indexOf(a);
     const ib = SECAO_ORDER.indexOf(b);
@@ -27,240 +111,246 @@ export const exportPedidoStyled = (pedido, cliente, vendedor) => {
   const { total, totalCaixas, totalBonif, totalKg } = calcOrder(pedido.items);
   const hasExtras = pedido.items.some((i) => i.isExtra);
 
-  let html =
-    '\ufeff<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-  html += `<head><meta charset="UTF-8">
-<!--[if gte mso 9]><xml>
-<x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
-<x:Name>Pedido</x:Name>
-<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
-</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
-</xml><![endif]-->
-<style>
-  table { border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 10pt; }
-  td { border: 1px solid #777; padding: 4px 6px; vertical-align: middle; mso-pattern: auto none; }
-  .title { background: #2a2a2a !important; color: #ffffff !important; font-weight: bold; font-size: 14pt; text-align: center; padding: 10px; letter-spacing: 1px; }
-  .subtitle { background: #3a3a3a !important; color: #ffffff !important; font-weight: bold; font-size: 10pt; text-align: center; padding: 6px; letter-spacing: 0.5px; }
-  .label { background: #ededed !important; font-weight: bold; padding: 4px 8px; }
-  .value { padding: 4px 8px; }
-  .section { background: #c8c8c8 !important; font-weight: bold; font-size: 11pt; padding: 6px 10px; text-align: left; letter-spacing: 0.5px; }
-  .thead { background: #2a2a2a !important; color: #ffffff !important; font-weight: bold; text-align: center; padding: 6px 4px; font-size: 9.5pt; }
-  .total-label { background: #2a2a2a !important; color: #ffffff !important; font-weight: bold; font-size: 12pt; text-align: right; padding: 8px; letter-spacing: 0.5px; }
-  .total-val { background: #2a2a2a !important; color: #ffffff !important; font-weight: bold; font-size: 12pt; text-align: right; padding: 8px; }
-  .extra { background: #fff5cc !important; }
-  .money { text-align: right; }
-  .pct { mso-number-format: '0.00\\%'; text-align: center; }
-  .num { mso-number-format: '0'; text-align: center; }
-  .kg { text-align: center; }
-  .text { mso-number-format: '\\@'; text-align: center; font-family: 'Consolas', 'Courier New', monospace; font-size: 9.5pt; }
-  .code { mso-number-format: '\\@'; text-align: center; font-family: 'Consolas', 'Courier New', monospace; font-size: 9.5pt; }
-  .left { text-align: left; }
-  .footer { font-size: 9pt; padding: 6px 8px; background: #f5f5f5 !important; font-style: italic; }
-  .summary-label { background: #ededed !important; font-weight: bold; padding: 6px 8px; text-align: center; }
-</style></head><body>
-<table>
-<colgroup>
-  <col style="width: 90pt;">
-  <col style="width: 95pt;">
-  <col style="width: 110pt;">
-  <col style="width: 240pt;">
-  <col style="width: 55pt;">
-  <col style="width: 55pt;">
-  <col style="width: 55pt;">
-  <col style="width: 65pt;">
-  <col style="width: 80pt;">
-  <col style="width: 55pt;">
-  <col style="width: 90pt;">
-</colgroup>`;
+  // Cabeçalho
+  banner(
+    ws,
+    `PEDIDO DE VENDA${pedido.numero ? ` — Nº ${pedido.numero}` : ''}`,
+    C.dark,
+    { size: 14, height: 26 }
+  );
+  banner(ws, 'LATICÍNIOS VERDE CAMPO S.A.', C.dark2, { size: 10 });
+  spacer(ws);
 
-  // Title
-  html += `<tr><td colspan="11" class="title">PEDIDO DE VENDA${
-    pedido.numero ? ` &mdash; Nº ${pedido.numero}` : ''
-  }</td></tr>`;
-  html += `<tr><td colspan="11" class="subtitle">LATICÍNIOS VERDE CAMPO S.A.</td></tr>`;
+  // Faixa de seção do bloco de dados
+  {
+    const row = ws.addRow(['DADOS DO CLIENTE', '', '', '', '', '', 'DADOS DO PEDIDO']);
+    const r = row.number;
+    ws.mergeCells(r, 1, r, 6);
+    ws.mergeCells(r, 7, r, NCOLS);
+    for (const c of [1, 7]) {
+      const x = ws.getCell(r, c);
+      x.font = { ...FONT, bold: true };
+      x.fill = fill(C.greyHeader);
+      x.alignment = { horizontal: 'center', vertical: 'middle' };
+    }
+    outline(ws, r);
+  }
 
-  // Empty separator
-  html += `<tr><td colspan="11" style="border: none; height: 6pt;"></td></tr>`;
+  const cidadeUf = cliente?.cidade
+    ? ` — ${cliente.cidade}${cliente.uf ? '/' + cliente.uf : ''}`
+    : '';
+  infoRow(ws, 'Razão Social', cliente?.razaoSocial || '-', 'Data', formatDate(pedido.data), true);
+  infoRow(ws, 'CNPJ', cliente?.cnpj || '-', 'Nº Pedido', pedido.numero || '-', true);
+  infoRow(ws, 'IE', cliente?.ie || '-', 'Vendedor', vendedor?.nome || '-');
+  infoRow(ws, 'Telefone', cliente?.telefone || '-', 'Tel. Vendedor', vendedor?.telefone || '-');
+  infoRow(
+    ws,
+    'Endereço',
+    (cliente?.endereco || '-') + cidadeUf,
+    'E-mail Vend.',
+    vendedor?.email || '-'
+  );
+  const nItens = pedido.items.length;
+  infoRow(
+    ws,
+    'Contato',
+    cliente?.contato || '-',
+    'Total Itens',
+    `${nItens} produto${nItens !== 1 ? 's' : ''} · ${totalCaixas} caixa${
+      totalCaixas !== 1 ? 's' : ''
+    }`,
+    true
+  );
+  spacer(ws);
 
-  // Cliente + Pedido info (two columns)
-  html += `<tr>
-    <td colspan="6" class="label" style="text-align: center; background: #d9d9d9 !important;">DADOS DO CLIENTE</td>
-    <td colspan="5" class="label" style="text-align: center; background: #d9d9d9 !important;">DADOS DO PEDIDO</td>
-  </tr>`;
-  html += `<tr>
-    <td class="label">Razão Social</td><td colspan="5" class="value">${escapeHtml(
-      cliente?.razaoSocial || '-'
-    )}</td>
-    <td class="label">Data</td><td colspan="4" class="value" style="text-align: center;">${formatDate(
-      pedido.data
-    )}</td>
-  </tr>`;
-  html += `<tr>
-    <td class="label">CNPJ</td><td colspan="5" class="value code" style="text-align: left;">${escapeHtml(
-      cliente?.cnpj || '-'
-    )}</td>
-    <td class="label">Nº Pedido</td><td colspan="4" class="value" style="text-align: center;">${escapeHtml(
-      pedido.numero || '-'
-    )}</td>
-  </tr>`;
-  html += `<tr>
-    <td class="label">IE</td><td colspan="5" class="value code" style="text-align: left;">${escapeHtml(
-      cliente?.ie || '-'
-    )}</td>
-    <td class="label">Vendedor</td><td colspan="4" class="value">${escapeHtml(
-      vendedor?.nome || '-'
-    )}</td>
-  </tr>`;
-  html += `<tr>
-    <td class="label">Telefone</td><td colspan="5" class="value text" style="text-align: left;">${escapeHtml(
-      cliente?.telefone || '-'
-    )}</td>
-    <td class="label">Tel. Vendedor</td><td colspan="4" class="value text" style="text-align: left;">${escapeHtml(
-      vendedor?.telefone || '-'
-    )}</td>
-  </tr>`;
-  html += `<tr>
-    <td class="label">Endereço</td><td colspan="5" class="value">${escapeHtml(
-      cliente?.endereco || '-'
-    )}${
-    cliente?.cidade
-      ? ` &mdash; ${escapeHtml(cliente.cidade)}${
-          cliente.uf ? '/' + escapeHtml(cliente.uf) : ''
-        }`
-      : ''
-  }</td>
-    <td class="label">E-mail Vend.</td><td colspan="4" class="value">${escapeHtml(
-      vendedor?.email || '-'
-    )}</td>
-  </tr>`;
-  html += `<tr>
-    <td class="label">Contato</td><td colspan="5" class="value">${escapeHtml(
-      cliente?.contato || '-'
-    )}</td>
-    <td class="label">Total Itens</td><td colspan="4" class="value" style="text-align: center;">${
-      pedido.items.length
-    } produto${
-    pedido.items.length !== 1 ? 's' : ''
-  } &middot; ${totalCaixas} caixa${totalCaixas !== 1 ? 's' : ''}</td>
-  </tr>`;
+  // Cabeçalho da tabela de produtos
+  {
+    const headers = [
+      'Cód. SAP',
+      'Cód. TOTVS',
+      'Cód. EAN',
+      'Produto',
+      'Caixas',
+      'Bonif.',
+      'Un/Cx',
+      'Total Un.',
+      'Valor Unit.',
+      'Desc%',
+      'Vl. Total',
+    ];
+    const row = ws.addRow(headers);
+    const r = row.number;
+    for (let c = 1; c <= NCOLS; c++) {
+      const x = ws.getCell(r, c);
+      x.font = { ...FONT, bold: true, size: 9.5, color: { argb: 'FFFFFFFF' } };
+      x.fill = fill(C.dark);
+      x.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    }
+    outline(ws, r);
+  }
 
-  // Empty separator
-  html += `<tr><td colspan="11" style="border: none; height: 6pt;"></td></tr>`;
+  // Produtos por seção
+  for (const section of sortedSections) {
+    const row = ws.addRow([section]);
+    const r = row.number;
+    ws.mergeCells(r, 1, r, NCOLS);
+    const x = ws.getCell(r, 1);
+    x.font = { ...FONT, bold: true, size: 11 };
+    x.fill = fill(C.greySection);
+    x.alignment = { horizontal: 'left', vertical: 'middle' };
+    outline(ws, r);
 
-  // Products table header
-  html += `<tr>
-    <td class="thead">Cód. SAP</td>
-    <td class="thead">Cód. TOTVS</td>
-    <td class="thead">Cód. EAN</td>
-    <td class="thead">Produto</td>
-    <td class="thead">Caixas</td>
-    <td class="thead">Bonif.</td>
-    <td class="thead">Un/Cx</td>
-    <td class="thead">Total Un.</td>
-    <td class="thead">Valor Unit.</td>
-    <td class="thead">Desc%</td>
-    <td class="thead">Vl. Total</td>
-  </tr>`;
-
-  // Products by section
-  sortedSections.forEach((section) => {
-    html += `<tr><td colspan="11" class="section">${escapeHtml(
-      section
-    )}</td></tr>`;
-    grouped[section].forEach(({ item, p }) => {
+    for (const { item, p } of grouped[section]) {
       const c = calcItem(item);
-      const cls = item.isExtra ? ' extra' : '';
       const descVal = parseFloat(item.descPct) || 0;
-      const nomeProduto =
-        escapeHtml(p.nome) +
-        (c.isKg
-          ? ` <span style="font-size: 8pt; color: #555;">(${p.peso_kg
-              .toString()
-              .replace('.', ',')} kg/cx)</span>`
-          : '');
-      const totalCell = c.isKg
-        ? `<td class="kg${cls}">${formatKgPlain(c.totalKg)}</td>`
-        : `<td class="num${cls}">${c.totalUn}</td>`;
-      const vlUnitDisplay = c.isKg
-        ? `<td class="money${cls}">${formatBRLPlain(
-            c.vlUnit
-          )}<span style="font-size: 8pt;"> /kg</span></td>`
-        : `<td class="money${cls}">${formatBRLPlain(c.vlUnit)}</td>`;
-      html += `<tr>
-        <td class="code${cls}">${escapeHtml(p.sap || '-')}</td>
-        <td class="code${cls}" style="font-weight: bold;">${escapeHtml(
-        p.codigo
-      )}</td>
-        <td class="code${cls}">${escapeHtml(p.ean || '-')}</td>
-        <td class="left${cls}">${nomeProduto}${
-        item.obs
-          ? `<br><span style="font-size: 8pt; color: #555;">Obs: ${escapeHtml(
-              item.obs
-            )}</span>`
-          : ''
-      }</td>
-        <td class="num${cls}">${item.caixas}</td>
-        <td class="num${cls}">${item.bonif || 0}</td>
-        <td class="num${cls}">${p.un_cx}</td>
-        ${totalCell}
-        ${vlUnitDisplay}
-        <td class="num${cls}">${descVal > 0 ? descVal + '%' : '-'}</td>
-        <td class="money${cls}" style="font-weight: bold;">${formatBRLPlain(
-        c.vlTotal
-      )}</td>
-      </tr>`;
-    });
-  });
 
-  // Summary row
-  html += `<tr><td colspan="11" style="border: none; height: 4pt;"></td></tr>`;
-  const summaryText =
-    `Total de Caixas: ${totalCaixas}` +
-    (totalKg > 0 ? ` &middot; Peso Total: ${formatKgPlain(totalKg)}` : '') +
-    (totalBonif > 0 ? ` &middot; Bonificação: ${totalBonif}` : '');
-  html += `<tr>
-    <td colspan="4" class="summary-label">${summaryText}</td>
-    <td colspan="6" class="total-label">TOTAL DO PEDIDO</td>
-    <td class="total-val">${formatBRLPlain(total)}</td>
-  </tr>`;
+      const nameRuns = [{ text: p.nome, font: { ...FONT } }];
+      if (c.isKg) {
+        nameRuns.push({
+          text: `  (${String(p.peso_kg).replace('.', ',')} kg/cx)`,
+          font: { name: 'Calibri', size: 8, color: { argb: C.muted } },
+        });
+      }
+      if (item.obs) {
+        nameRuns.push({
+          text: `\nObs: ${item.obs}`,
+          font: { name: 'Calibri', size: 8, color: { argb: C.muted } },
+        });
+      }
 
-  // Observations
+      const dataRow = ws.addRow([
+        p.sap || '-',
+        p.codigo,
+        p.ean || '-',
+        { richText: nameRuns },
+        Number(item.caixas) || 0,
+        Number(item.bonif) || 0,
+        p.un_cx,
+        c.isKg ? c.totalKg : c.totalUn,
+        c.vlUnit,
+        descVal > 0 ? descVal : '-',
+        c.vlTotal,
+      ]);
+      const r2 = dataRow.number;
+
+      for (let col = 1; col <= NCOLS; col++) ws.getCell(r2, col).font = FONT;
+      for (const col of [1, 2, 3]) {
+        const x = ws.getCell(r2, col);
+        x.font = { ...MONO, bold: col === 2 };
+        x.alignment = { horizontal: 'center', vertical: 'middle' };
+      }
+      ws.getCell(r2, 4).alignment = { vertical: 'middle', wrapText: true };
+      for (const col of [5, 6, 7, 8, 10]) {
+        ws.getCell(r2, col).alignment = { horizontal: 'center', vertical: 'middle' };
+      }
+      ws.getCell(r2, 8).numFmt = c.isKg ? '#,##0.00" kg"' : '0';
+      for (const col of [5, 6, 7]) ws.getCell(r2, col).numFmt = '0';
+      if (descVal > 0) ws.getCell(r2, 10).numFmt = '0"%"';
+      for (const col of [9, 11]) {
+        const x = ws.getCell(r2, col);
+        x.numFmt = BRL_FMT;
+        x.alignment = { horizontal: 'right', vertical: 'middle' };
+      }
+      ws.getCell(r2, 11).font = { ...FONT, bold: true };
+
+      if (item.isExtra) {
+        for (let col = 1; col <= NCOLS; col++) ws.getCell(r2, col).fill = fill(C.yellow);
+      }
+      outline(ws, r2);
+    }
+  }
+
+  spacer(ws, 4);
+
+  // Linha de totais
+  {
+    const summaryParts = [`Total de Caixas: ${totalCaixas}`];
+    if (totalKg > 0) {
+      summaryParts.push(
+        `Peso Total: ${totalKg.toLocaleString('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} kg`
+      );
+    }
+    if (totalBonif > 0) summaryParts.push(`Bonificação: ${totalBonif}`);
+
+    const row = ws.addRow([summaryParts.join(' · ')]);
+    const r = row.number;
+    ws.mergeCells(r, 1, r, 4);
+    ws.mergeCells(r, 5, r, 10);
+    ws.getCell(r, 11).value = total;
+
+    const sLbl = ws.getCell(r, 1);
+    sLbl.font = { ...FONT, bold: true };
+    sLbl.fill = fill(C.greyLabel);
+    sLbl.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    for (const col of [5, 11]) {
+      const x = ws.getCell(r, col);
+      x.font = { ...FONT, bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      x.fill = fill(C.dark);
+      x.alignment = { horizontal: 'right', vertical: 'middle' };
+    }
+    ws.getCell(r, 5).value = 'TOTAL DO PEDIDO';
+    ws.getCell(r, 11).numFmt = BRL_FMT;
+    outline(ws, r);
+    row.height = 20;
+  }
+
+  // Observações
   if (pedido.obs) {
-    html += `<tr><td colspan="11" style="border: none; height: 4pt;"></td></tr>`;
-    html += `<tr>
-      <td class="label">Observações</td>
-      <td colspan="10" class="value">${escapeHtml(pedido.obs)}</td>
-    </tr>`;
+    spacer(ws, 4);
+    const row = ws.addRow(['Observações', pedido.obs]);
+    const r = row.number;
+    ws.mergeCells(r, 2, r, NCOLS);
+    const lbl = ws.getCell(r, 1);
+    lbl.font = { ...FONT, bold: true };
+    lbl.fill = fill(C.greyLabel);
+    lbl.alignment = { vertical: 'middle' };
+    ws.getCell(r, 2).alignment = { vertical: 'middle', wrapText: true };
+    outline(ws, r);
   }
 
-  // Extras note
+  // Nota de itens extras
   if (hasExtras) {
-    html += `<tr><td colspan="11" class="footer">📌 Itens destacados em fundo amarelo claro são sugestões adicionadas ao pedido original do cliente.</td></tr>`;
+    const r = banner(
+      ws,
+      'Itens destacados em amarelo claro são sugestões adicionadas ao pedido original do cliente.',
+      C.footer,
+      { color: 'FF555555', align: 'left' }
+    );
+    ws.getCell(r, 1).font = {
+      name: 'Calibri',
+      size: 9,
+      italic: true,
+      color: { argb: 'FF555555' },
+    };
   }
 
-  // Footer
-  html += `<tr><td colspan="11" style="border: none; height: 6pt;"></td></tr>`;
-  html += `<tr>
-    <td colspan="11" class="footer">Fornecedor: LATICÍNIOS VERDE CAMPO S.A. &middot; Av. Luiz Gomide, Lavras-MG &middot; CNPJ: 07.757.005/0001-02 &middot; Frete a pagar &middot; Transportadora: __________</td>
-  </tr>`;
+  spacer(ws);
+  const r = banner(
+    ws,
+    'Fornecedor: LATICÍNIOS VERDE CAMPO S.A. · Av. Luiz Gomide, Lavras-MG · CNPJ: 07.757.005/0001-02 · Frete a pagar · Transportadora: __________',
+    C.footer,
+    { color: 'FF555555', align: 'left' }
+  );
+  ws.getCell(r, 1).font = {
+    name: 'Calibri',
+    size: 9,
+    italic: true,
+    color: { argb: 'FF555555' },
+  };
 
-  html += `</table></body></html>`;
+  return wb;
+}
 
+export async function exportPedidoStyled(pedido, cliente, vendedor) {
+  const wb = await buildPedidoWorkbook(pedido, cliente, vendedor);
+  const buf = await wb.xlsx.writeBuffer();
   const clienteName = (cliente?.razaoSocial || 'Cliente')
     .replace(/[^a-zA-Z0-9]/g, '_')
     .slice(0, 30);
   const numero = pedido.numero || todayISO().replace(/-/g, '');
-  const filename = `Pedido_${numero}_${clienteName}.xls`;
-
-  const blob = new Blob([html], {
-    type: 'application/vnd.ms-excel;charset=utf-8',
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-};
+  downloadBlob(buf, `Pedido_${numero}_${clienteName}.xlsx`, XLSX_MIME);
+}

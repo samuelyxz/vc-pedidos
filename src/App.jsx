@@ -114,7 +114,9 @@ export default function App() {
       finalizadoEm: new Date().toISOString(),
     };
     setPedidos([novo, ...pedidos]);
-    exportPedidoStyled(novo, clienteSnapshot, vendedor);
+    exportPedidoStyled(novo, clienteSnapshot, vendedor).catch(() =>
+      alert('Não consegui gerar a planilha. O pedido foi salvo no histórico — dá pra baixar de lá.')
+    );
     setPedidoAtual({
       id: uid(),
       numero: '',
@@ -132,7 +134,9 @@ export default function App() {
       return alert('Adicione ao menos um produto.');
     const cliente = clientes.find((c) => c.id === pedidoAtual.clienteId);
     const pedidoComDataAtual = { ...pedidoAtual, data: todayISO() };
-    exportPedidoStyled(pedidoComDataAtual, cliente, vendedor);
+    exportPedidoStyled(pedidoComDataAtual, cliente, vendedor).catch(() =>
+      alert('Não consegui gerar a planilha. Tente de novo.')
+    );
   };
 
   const gerarBonificacaoDePedido = (pedido) => {
