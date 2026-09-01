@@ -26,9 +26,5 @@ jobs:
       - name: Build de produção
         run: npm run build
 
-      # Lint ainda tem 7 problemas pré-existentes (ligados ao singleton PRODUCTS /
-      # catVersion). Roda como informativo até o Tier 2 zerar isso — depois é só
-      # remover o `continue-on-error`.
-      - name: Lint (informativo)
+      - name: Lint
         run: npm run lint
-        continue-on-error: true

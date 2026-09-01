@@ -8,8 +8,9 @@ import {
 } from 'lucide-react';
 import { VC_GREEN, VC_GREEN_BG } from '../lib/constants.js';
 import { uid, todayISO } from '../lib/format.js';
-import { PRODUCTS, parsePriceTable, mergeProducts } from '../lib/catalog.js';
+import { parsePriceTable, mergeProducts } from '../lib/catalog.js';
 import { downloadBackup, applyBackup } from '../lib/backup.js';
+import { useCatalog } from '../state/CatalogContext.jsx';
 import { Field } from '../components/Field.jsx';
 
 // ============== CONFIG ==============
@@ -21,10 +22,6 @@ export function ConfigView({
   setClientes,
   setPedidos,
   setPedidoAtual,
-  catMeta,
-  onUpdateCatalog,
-  onResetCatalog,
-  catVersion,
 }) {
   return (
     <div className="px-4 md:px-6 py-4 md:py-6">
@@ -69,12 +66,7 @@ export function ConfigView({
         </div>
       </div>
 
-      <CatalogUpdateCard
-        catMeta={catMeta}
-        onUpdate={onUpdateCatalog}
-        onReset={onResetCatalog}
-        catVersion={catVersion}
-      />
+      <CatalogUpdateCard />
 
       <div className="bg-white rounded-xl border border-stone-200 p-4 mb-4">
         <h3 className="font-semibold text-stone-900 text-sm mb-2">
@@ -148,7 +140,13 @@ export function ConfigView({
   );
 }
 
-function CatalogUpdateCard({ catMeta, onUpdate, onReset, catVersion }) {
+function CatalogUpdateCard() {
+  const {
+    products,
+    catMeta,
+    updateCatalog: onUpdate,
+    resetCatalog: onReset,
+  } = useCatalog();
   const [parsing, setParsing] = useState(false);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
@@ -158,12 +156,12 @@ function CatalogUpdateCard({ catMeta, onUpdate, onReset, catVersion }) {
 
   const stats = useMemo(() => {
     const byCat = {};
-    PRODUCTS.forEach((p) => {
+    products.forEach((p) => {
       byCat[p.categoria || 'OUTROS'] =
         (byCat[p.categoria || 'OUTROS'] || 0) + 1;
     });
-    return { total: PRODUCTS.length, byCat };
-  }, [catVersion]);
+    return { total: products.length, byCat };
+  }, [products]);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
@@ -184,13 +182,13 @@ function CatalogUpdateCard({ catMeta, onUpdate, onReset, catVersion }) {
     setParsing(true);
     try {
       const parsed = await parsePriceTable(file);
-      const merged = mergeProducts(parsed, PRODUCTS);
+      const merged = mergeProducts(parsed, products);
       const novos = merged.filter((p) => p.status === 'NOVO');
-      const removidos = PRODUCTS.filter(
+      const removidos = products.filter(
         (c) => !merged.find((p) => p.codigo === c.codigo)
       );
       const atualizados = merged.filter((p) => {
-        const old = PRODUCTS.find((c) => c.codigo === p.codigo);
+        const old = products.find((c) => c.codigo === p.codigo);
         return (
           old &&
           (Math.abs(old.preco_st - p.preco_st) > 0.001 || old.un_cx !== p.un_cx)
