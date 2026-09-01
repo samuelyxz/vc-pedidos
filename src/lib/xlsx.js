@@ -2,11 +2,16 @@
 export const XLSX_MIME =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
+// Bags de estilo do exceljs — tipagem propria do lib e restritiva demais pra
+// literais; tratamos como `any` na fronteira (a logica continua checada).
+/** @type {any} */
 export const FONT = { name: 'Calibri', size: 10 };
+/** @type {any} */
 export const MONO = { name: 'Consolas', size: 9.5 };
 export const BRL_FMT = '"R$" #,##0.00';
 
 export const argb = (hex) => 'FF' + hex;
+/** @returns {any} */
 export const fill = (hex) => ({
   type: 'pattern',
   pattern: 'solid',

@@ -1,15 +1,24 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
 import App from './App.jsx';
 import { CatalogProvider } from './state/CatalogContext.jsx';
+import { ToastProvider } from './state/ToastContext.jsx';
 
 afterEach(cleanup);
 
 const renderApp = () =>
   render(
-    <CatalogProvider>
-      <App />
-    </CatalogProvider>
+    <ToastProvider>
+      <CatalogProvider>
+        <App />
+      </CatalogProvider>
+    </ToastProvider>
   );
 
 // Smoke test: exercita todo o grafo de módulos (App -> views -> components -> lib)
@@ -29,6 +38,17 @@ describe('<App />', () => {
     renderApp();
     // produto da tabela embutida
     expect(await screen.findByText(/CREME DE LEITE LACFREE 500G/i)).toBeInTheDocument();
+  });
+
+  it('abre o modal de produto e fecha no ESC', async () => {
+    renderApp();
+    const prod = await screen.findByText(/CREME DE LEITE LACFREE 500G/i);
+    fireEvent.click(prod);
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    );
   });
 
   it('a aba Ajustes tem o card de backup (exportar/importar)', async () => {

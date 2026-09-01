@@ -13,6 +13,8 @@ import { store } from './lib/storage.js';
 import { calcOrder } from './lib/calc.js';
 import { exportPedidoStyled } from './lib/exportPedido.js';
 import { useCatalog } from './state/CatalogContext.jsx';
+import { useToast } from './state/ToastContext.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { NovoPedidoView } from './views/NovoPedidoView.jsx';
 import { PedidosView } from './views/PedidosView.jsx';
 import { ClientesView } from './views/ClientesView.jsx';
@@ -23,6 +25,7 @@ import { ConfigView } from './views/ConfigView.jsx';
 // ============== MAIN APP ==============
 export default function App() {
   const { ready: catalogReady } = useCatalog();
+  const { notify } = useToast();
   const [tab, setTab] = useState('pedido');
   const [clientes, setClientes] = useState([]);
   const [vendedor, setVendedor] = useState({
@@ -99,10 +102,14 @@ export default function App() {
   }
 
   const finalizarPedido = () => {
-    if (!pedidoAtual.clienteId)
-      return alert('Selecione um cliente antes de finalizar.');
-    if (pedidoAtual.items.length === 0)
-      return alert('Adicione ao menos um produto.');
+    if (!pedidoAtual.clienteId) {
+      notify('Selecione um cliente antes de finalizar.', { type: 'error' });
+      return;
+    }
+    if (pedidoAtual.items.length === 0) {
+      notify('Adicione ao menos um produto.', { type: 'error' });
+      return;
+    }
     const cliente = clientes.find((c) => c.id === pedidoAtual.clienteId);
     const clienteSnapshot = cliente ? { ...cliente } : null;
     const { total } = calcOrder(pedidoAtual.items);
@@ -115,7 +122,10 @@ export default function App() {
     };
     setPedidos([novo, ...pedidos]);
     exportPedidoStyled(novo, clienteSnapshot, vendedor).catch(() =>
-      alert('Não consegui gerar a planilha. O pedido foi salvo no histórico — dá pra baixar de lá.')
+      notify(
+        'Não consegui gerar a planilha. O pedido foi salvo no histórico — dá pra baixar de lá.',
+        { type: 'error', duration: 7000 }
+      )
     );
     setPedidoAtual({
       id: uid(),
@@ -128,14 +138,18 @@ export default function App() {
   };
 
   const apenasExportar = () => {
-    if (!pedidoAtual.clienteId)
-      return alert('Selecione um cliente antes de exportar.');
-    if (pedidoAtual.items.length === 0)
-      return alert('Adicione ao menos um produto.');
+    if (!pedidoAtual.clienteId) {
+      notify('Selecione um cliente antes de exportar.', { type: 'error' });
+      return;
+    }
+    if (pedidoAtual.items.length === 0) {
+      notify('Adicione ao menos um produto.', { type: 'error' });
+      return;
+    }
     const cliente = clientes.find((c) => c.id === pedidoAtual.clienteId);
     const pedidoComDataAtual = { ...pedidoAtual, data: todayISO() };
     exportPedidoStyled(pedidoComDataAtual, cliente, vendedor).catch(() =>
-      alert('Não consegui gerar a planilha. Tente de novo.')
+      notify('Não consegui gerar a planilha. Tente de novo.', { type: 'error' })
     );
   };
 
@@ -236,6 +250,7 @@ export default function App() {
         </header>
 
         <div className="max-w-5xl mx-auto">
+          <ErrorBoundary key={tab}>
           {tab === 'pedido' && (
             <NovoPedidoView
               pedido={pedidoAtual}
@@ -279,6 +294,7 @@ export default function App() {
               setPedidoAtual={setPedidoAtual}
             />
           )}
+          </ErrorBoundary>
         </div>
       </main>
 

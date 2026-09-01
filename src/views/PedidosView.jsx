@@ -11,9 +11,12 @@ import { formatBRL, formatDate } from '../lib/format.js';
 import { findProduct } from '../lib/catalog.js';
 import { calcItem } from '../lib/calc.js';
 import { exportPedidoStyled } from '../lib/exportPedido.js';
+import { useToast } from '../state/ToastContext.jsx';
+import { Modal } from '../components/Modal.jsx';
 
 // ============== PEDIDOS (HISTÓRICO) ==============
 export function PedidosView({ pedidos, setPedidos, vendedor, onGerarBonificacao }) {
+  const { confirm } = useToast();
   const [viewing, setViewing] = useState(null);
 
   return (
@@ -81,8 +84,13 @@ export function PedidosView({ pedidos, setPedidos, vendedor, onGerarBonificacao 
             onGerarBonificacao(viewing);
             setViewing(null);
           }}
-          onDelete={() => {
-            if (confirm('Excluir este pedido do histórico?')) {
+          onDelete={async () => {
+            if (
+              await confirm('Excluir este pedido do histórico?', {
+                confirmText: 'Excluir',
+                danger: true,
+              })
+            ) {
               setPedidos(pedidos.filter((p) => p.id !== viewing.id));
               setViewing(null);
             }
@@ -100,15 +108,13 @@ function PedidoDetailModal({
   onDelete,
   onGerarBonificacao,
 }) {
+  const { notify } = useToast();
   return (
-    <div
-      className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4"
-      onClick={onClose}
+    <Modal
+      onClose={onClose}
+      ariaLabel={`Pedido ${pedido.numero || ''}`}
+      className="w-full md:max-w-lg rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
     >
-      <div
-        className="bg-white w-full md:max-w-lg rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between p-4 border-b border-stone-200">
           <div>
             <h3 className="font-semibold text-stone-900">
@@ -177,7 +183,10 @@ function PedidoDetailModal({
           <button
             onClick={() =>
               exportPedidoStyled(pedido, pedido.clienteSnapshot, vendedor).catch(
-                () => alert('Não consegui gerar a planilha. Tente de novo.')
+                () =>
+                  notify('Não consegui gerar a planilha. Tente de novo.', {
+                    type: 'error',
+                  })
               )
             }
             className="flex-1 px-3 py-2 text-sm font-semibold text-white rounded-lg flex items-center justify-center gap-2"
@@ -187,7 +196,6 @@ function PedidoDetailModal({
             Baixar Planilha
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

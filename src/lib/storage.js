@@ -1,15 +1,20 @@
 // Persistência: usa window.storage (artifact Claude) ou localStorage.
+// `window.storage` não é padrão — API só presente dentro de artifacts do Claude.
+const claudeStorage =
+  typeof window !== 'undefined'
+    ? /** @type {{ get: Function, set: Function, delete: Function } | undefined} */ (
+        /** @type {any} */ (window).storage
+      )
+    : undefined;
 const hasClaudeStorage =
-  typeof window !== 'undefined' &&
-  window.storage &&
-  typeof window.storage.get === 'function';
-const hasLocalStorage = typeof window !== 'undefined' && window.localStorage;
+  !!claudeStorage && typeof claudeStorage.get === 'function';
+const hasLocalStorage = typeof window !== 'undefined' && !!window.localStorage;
 
 export const store = {
   async get(key, fallback = null) {
     try {
       if (hasClaudeStorage) {
-        const r = await window.storage.get(key);
+        const r = await claudeStorage.get(key);
         return r && r.value != null ? JSON.parse(r.value) : fallback;
       }
       if (hasLocalStorage) {
@@ -24,7 +29,7 @@ export const store = {
   async set(key, value) {
     try {
       if (hasClaudeStorage) {
-        await window.storage.set(key, JSON.stringify(value));
+        await claudeStorage.set(key, JSON.stringify(value));
         return true;
       }
       if (hasLocalStorage) {
@@ -39,7 +44,7 @@ export const store = {
   async delete(key) {
     try {
       if (hasClaudeStorage) {
-        await window.storage.delete(key);
+        await claudeStorage.delete(key);
         return true;
       }
       if (hasLocalStorage) {
