@@ -1,9 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { store } from './storage.js';
-import { collectBackup, normalizeBackup, applyBackup, BACKUP_KEYS } from './backup.js';
+import {
+  collectBackup,
+  normalizeBackup,
+  applyBackup,
+  LOCAL_KEYS,
+} from './backup.js';
+import { getAllImages, clearImages } from './imageStore.js';
 
 beforeEach(async () => {
-  for (const k of BACKUP_KEYS) await store.delete(k);
+  for (const k of [...LOCAL_KEYS, 'product_images']) await store.delete(k);
+  await clearImages();
 });
 
 describe('collectBackup', () => {
@@ -14,6 +21,12 @@ describe('collectBackup', () => {
     expect(pkg._app).toBe('vc-pedidos');
     expect(Object.keys(pkg.data).sort()).toEqual(['clientes', 'supervisor']);
     expect(pkg.data.clientes[0].razaoSocial).toBe('ACME');
+  });
+
+  it('inclui as imagens do IndexedDB', async () => {
+    await applyBackup({ data: { product_images: { X1: 'data:img,AAA' } } });
+    const pkg = await collectBackup();
+    expect(pkg.data.product_images).toEqual({ X1: 'data:img,AAA' });
   });
 });
 
@@ -45,7 +58,7 @@ describe('normalizeBackup', () => {
 });
 
 describe('applyBackup', () => {
-  it('grava no store e ignora chaves desconhecidas', async () => {
+  it('grava clientes/pedidos no store e ignora chaves desconhecidas', async () => {
     const keys = await applyBackup({
       data: {
         clientes: [{ id: 'c1', razaoSocial: 'X' }],
@@ -58,17 +71,26 @@ describe('applyBackup', () => {
     expect(await store.get('pedidos')).toEqual([{ id: 'o1' }]);
   });
 
-  it('round-trip: collect -> apply reconstrói os dados', async () => {
+  it('grava product_images no IndexedDB, não no localStorage', async () => {
+    await applyBackup({ data: { product_images: { A: 'data:img,1', B: 'data:img,2' } } });
+    expect(await getAllImages()).toEqual({ A: 'data:img,1', B: 'data:img,2' });
+    expect(await store.get('product_images', null)).toBe(null);
+  });
+
+  it('round-trip: collect -> apply reconstrói dados e imagens', async () => {
     await store.set('bonificacoes', [{ id: 'b1', motivo: 'degustação' }]);
     await store.set('vendedor', { nome: 'Samuel' });
+    await applyBackup({ data: { product_images: { P1: 'data:img,z' } } });
     const pkg = await collectBackup();
 
-    for (const k of BACKUP_KEYS) await store.delete(k);
+    for (const k of LOCAL_KEYS) await store.delete(k);
+    await clearImages();
     await applyBackup(pkg);
 
     expect(await store.get('bonificacoes')).toEqual([
       { id: 'b1', motivo: 'degustação' },
     ]);
     expect(await store.get('vendedor')).toEqual({ nome: 'Samuel' });
+    expect(await getAllImages()).toEqual({ P1: 'data:img,z' });
   });
 });

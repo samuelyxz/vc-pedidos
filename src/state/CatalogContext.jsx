@@ -2,6 +2,12 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { store } from '../lib/storage.js';
 import { DEFAULT_PRODUCTS } from '../data/products.js';
 import { setProducts as syncProductsSingleton } from '../lib/catalog.js';
+import {
+  getAllImages,
+  putImage,
+  deleteImage,
+  migrateLegacyImages,
+} from '../lib/imageStore.js';
 
 const DEFAULT_META = { source: 'default', updatedAt: null, filename: '' };
 
@@ -28,7 +34,13 @@ export function CatalogProvider({ children }) {
         setProductsState(storedCat);
       }
       setCatMeta(await store.get('catalogo_meta', DEFAULT_META));
-      setCustomImages((await store.get('product_images', {})) || {});
+      try {
+        await migrateLegacyImages();
+        setCustomImages(await getAllImages());
+      } catch {
+        // IndexedDB indisponível (aba anônima, etc.) — segue sem fotos custom
+        setCustomImages({});
+      }
       setReady(true);
     })();
   }, []);
@@ -53,16 +65,17 @@ export function CatalogProvider({ children }) {
   };
 
   const setProductImage = async (codigo, dataUrl) => {
-    const next = { ...customImages, [codigo]: dataUrl };
-    setCustomImages(next);
-    await store.set('product_images', next);
+    setCustomImages((prev) => ({ ...prev, [codigo]: dataUrl }));
+    await putImage(codigo, dataUrl);
   };
 
   const removeProductImage = async (codigo) => {
-    const next = { ...customImages };
-    delete next[codigo];
-    setCustomImages(next);
-    await store.set('product_images', next);
+    setCustomImages((prev) => {
+      const next = { ...prev };
+      delete next[codigo];
+      return next;
+    });
+    await deleteImage(codigo);
   };
 
   return (
