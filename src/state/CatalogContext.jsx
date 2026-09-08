@@ -1,7 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { store } from '../lib/storage.js';
 import { DEFAULT_PRODUCTS } from '../data/products.js';
-import { setProducts as syncProductsSingleton } from '../lib/catalog.js';
+import {
+  setProducts as syncProductsSingleton,
+  backfillFromDefaults,
+} from '../lib/catalog.js';
 import {
   getAllImages,
   putImage,
@@ -32,7 +35,8 @@ export function CatalogProvider({ children }) {
     (async () => {
       const storedCat = await store.get('catalogo');
       if (Array.isArray(storedCat) && storedCat.length > 0) {
-        setProductsState(storedCat);
+        // completa foto/SAP/EAN que a tabela embutida ganhou depois do upload
+        setProductsState(backfillFromDefaults(storedCat));
       }
       setCatMeta(await store.get('catalogo_meta', DEFAULT_META));
       try {
@@ -52,9 +56,10 @@ export function CatalogProvider({ children }) {
       updatedAt: new Date().toISOString(),
       filename: filename || '',
     };
-    setProductsState(newProducts);
+    const completo = backfillFromDefaults(newProducts);
+    setProductsState(completo);
     setCatMeta(meta);
-    await store.set('catalogo', newProducts);
+    await store.set('catalogo', completo);
     await store.set('catalogo_meta', meta);
     clearCachedCatalogImages().catch(() => {}); // URLs podem ter mudado
   };
