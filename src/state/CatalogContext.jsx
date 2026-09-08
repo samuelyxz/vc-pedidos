@@ -7,6 +7,7 @@ import {
   putImage,
   deleteImage,
   migrateLegacyImages,
+  clearCachedCatalogImages,
 } from '../lib/imageStore.js';
 
 const DEFAULT_META = { source: 'default', updatedAt: null, filename: '' };
@@ -55,6 +56,7 @@ export function CatalogProvider({ children }) {
     setCatMeta(meta);
     await store.set('catalogo', newProducts);
     await store.set('catalogo_meta', meta);
+    clearCachedCatalogImages().catch(() => {}); // URLs podem ter mudado
   };
 
   const resetCatalog = async () => {
@@ -62,6 +64,7 @@ export function CatalogProvider({ children }) {
     setCatMeta(DEFAULT_META);
     await store.delete('catalogo');
     await store.set('catalogo_meta', DEFAULT_META);
+    clearCachedCatalogImages().catch(() => {});
   };
 
   const setProductImage = async (codigo, dataUrl) => {
