@@ -171,6 +171,30 @@ export function mergeProducts(newList, oldList) {
   });
 }
 
+// Catálogos salvos por uploads antigos ficam congelados no estado em que a
+// tabela embutida estava naquele dia. Se depois a gente cadastra a foto (ou o
+// SAP/EAN) de um produto no código, quem já tinha catálogo salvo nunca veria.
+// Aqui preenchemos só os campos informativos que estiverem vazios, casando pelo
+// código — preço, un/cx, peso e unidade continuam sendo os do catálogo salvo.
+/**
+ * @param {Product[]} products
+ * @returns {Product[]}
+ */
+export function backfillFromDefaults(products) {
+  const base = new Map(DEFAULT_PRODUCTS.map((p) => [p.codigo, p]));
+  return products.map((p) => {
+    const d = base.get(p.codigo);
+    if (!d) return p;
+    if (p.imagem && p.sap && p.ean) return p;
+    return {
+      ...p,
+      imagem: p.imagem || d.imagem || '',
+      sap: p.sap || d.sap || '',
+      ean: p.ean || d.ean || '',
+    };
+  });
+}
+
 /** @param {string} codigo @returns {Product | undefined} */
 export const findProduct = (codigo) =>
   PRODUCTS.find((p) => p.codigo === codigo);

@@ -43,6 +43,15 @@ describe('CatalogProvider', () => {
     expect(await store.get('catalogo')).toEqual(novo);
   });
 
+  it('catálogo salvo de upload antigo ganha as fotos da tabela embutida', async () => {
+    const kids = DEFAULT_PRODUCTS.find((p) => p.codigo === '80.881.0001');
+    // simula um upload feito antes das fotos existirem: sem imagem, preço próprio
+    await store.set('catalogo', [{ ...kids, imagem: '', preco_st: 77.7 }]);
+    const r = await mount();
+    expect(r.current.products[0].imagem).toBe(kids.imagem);
+    expect(r.current.products[0].preco_st).toBe(77.7); // preço do upload preservado
+  });
+
   it('resetCatalog volta pra tabela embutida e limpa o storage', async () => {
     const r = await mount();
     await act(async () => {

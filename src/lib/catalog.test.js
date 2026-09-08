@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
-import { parsePriceTable, mergeProducts } from './catalog.js';
+import {
+  parsePriceTable,
+  mergeProducts,
+  backfillFromDefaults,
+} from './catalog.js';
+import { DEFAULT_PRODUCTS } from '../data/products.js';
 
 // Cria um "File-like" com arrayBuffer() a partir de linhas de planilha.
 function fakeXlsx(rows, sheetName = 'Export') {
@@ -66,5 +71,53 @@ describe('mergeProducts', () => {
     );
     expect(m.status).toBe('NOVO');
     expect(m.sap).toBe('');
+  });
+});
+
+describe('backfillFromDefaults', () => {
+  const kids = DEFAULT_PRODUCTS.find((p) => p.codigo === '80.881.0001');
+
+  it('preenche imagem/sap/ean vazios a partir da tabela embutida', () => {
+    const salvo = [
+      { ...kids, imagem: '', sap: '', ean: '', preco_st: 99.9 },
+    ];
+    const [out] = backfillFromDefaults(salvo);
+    expect(out.imagem).toBe(kids.imagem);
+    expect(out.imagem).toContain('verdecampo.com.br');
+    expect(out.sap).toBe(kids.sap);
+    expect(out.ean).toBe(kids.ean);
+  });
+
+  it('NÃO mexe em preço, un/cx, peso nem unidade do catálogo salvo', () => {
+    const salvo = [
+      {
+        ...kids,
+        imagem: '',
+        preco_st: 99.9,
+        un_cx: 6,
+        peso_kg: 7,
+        unidade: 'KG',
+      },
+    ];
+    const [out] = backfillFromDefaults(salvo);
+    expect(out.preco_st).toBe(99.9);
+    expect(out.un_cx).toBe(6);
+    expect(out.peso_kg).toBe(7);
+    expect(out.unidade).toBe('KG');
+  });
+
+  it('não sobrescreve valores que já existem', () => {
+    const salvo = [{ ...kids, imagem: 'https://minha/foto.png' }];
+    const [out] = backfillFromDefaults(salvo);
+    expect(out.imagem).toBe('https://minha/foto.png');
+  });
+
+  it('deixa intacto produto que não está na tabela embutida', () => {
+    const salvo = [
+      { codigo: 'ZZZ', nome: 'Só do upload', preco_st: 1, un_cx: 1, imagem: '' },
+    ];
+    const [out] = backfillFromDefaults(salvo);
+    expect(out.imagem).toBe('');
+    expect(out.nome).toBe('Só do upload');
   });
 });
