@@ -13,6 +13,23 @@ import {
 // rápido o limite de ~5MB do localStorage.
 const store = createStore('vc-pedidos', 'product-images');
 
+// Cache descartável das fotos do catálogo baixadas com sucesso (via proxy).
+// Serve pra não depender do proxy toda vez. Não entra no backup — é regenerável.
+// Banco próprio (não dá pra ter 2 object stores no mesmo DB com idb-keyval).
+const cacheStore = createStore('vc-pedidos-img-cache', 'images');
+
+/** @param {string} codigo @returns {Promise<string|undefined>} */
+export function getCachedCatalogImage(codigo) {
+  return get(codigo, cacheStore);
+}
+/** @param {string} codigo @param {string} dataUrl */
+export function putCachedCatalogImage(codigo, dataUrl) {
+  return set(codigo, dataUrl, cacheStore);
+}
+export function clearCachedCatalogImages() {
+  return clear(cacheStore);
+}
+
 export async function getAllImages() {
   const out = {};
   for (const [codigo, dataUrl] of await entries(store)) out[codigo] = dataUrl;
