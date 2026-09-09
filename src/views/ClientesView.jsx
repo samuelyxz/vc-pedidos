@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import {
   Users,
   Plus,
@@ -9,8 +9,15 @@ import { VC_GREEN } from '../lib/constants.js';
 import { uid } from '../lib/format.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { Field } from '../components/Field.jsx';
-import { FichaCadastralModal } from '../components/FichaCadastralModal.jsx';
 import { Modal } from '../components/Modal.jsx';
+
+// A ficha carrega o modelo oficial embutido e as listas da Verde Campo — uns
+// 75 kB que só fazem sentido quando alguém abre a ficha de fato.
+const FichaCadastralModal = lazy(() =>
+  import('../components/FichaCadastralModal.jsx').then((m) => ({
+    default: m.FichaCadastralModal,
+  }))
+);
 
 // ============== CLIENTES ==============
 export function ClientesView({ clientes, setClientes }) {
@@ -242,10 +249,12 @@ function ClienteFormModal({ cliente, onSave, onDelete, onCancel }) {
         </div>
       </Modal>
       {showFicha && (
-        <FichaCadastralModal
-          clienteInicial={form}
-          onClose={() => setShowFicha(false)}
-        />
+        <Suspense fallback={null}>
+          <FichaCadastralModal
+            clienteInicial={form}
+            onClose={() => setShowFicha(false)}
+          />
+        </Suspense>
       )}
     </>
   );

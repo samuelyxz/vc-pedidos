@@ -1,9 +1,25 @@
 import { useState } from 'react';
-import { Download, X, RefreshCw } from 'lucide-react';
+import { Download, X, RefreshCw, FileDown } from 'lucide-react';
 import { VC_GREEN } from '../lib/constants.js';
-import { gerarFichaCadastro, baixarFichaEmBranco } from '../lib/ficha.js';
+import {
+  exportarFichaCadastro,
+  baixarFichaEmBranco,
+  normalizarTexto,
+} from '../lib/ficha.js';
+import {
+  exportarFichaLegada,
+  baixarFichaLegadaEmBranco,
+} from '../lib/fichaLegado.js';
+import {
+  REPRESENTANTES,
+  BANCOS,
+  TABELAS_PRECO,
+  FORMAS_PAGAMENTO,
+  OPCOES_EDI,
+  MODALIDADES_FRETE,
+} from '../data/fichaBase.js';
 import { useToast } from '../state/ToastContext.jsx';
-import { Field } from './Field.jsx';
+import { Field, Select, Combo } from './Field.jsx';
 import { Modal } from './Modal.jsx';
 
 function Sec({ children }) {
@@ -17,116 +33,172 @@ function Sec({ children }) {
   );
 }
 
+// Obrigatórios segundo a aba "Orientações Preenchimento" do modelo oficial.
+const OBRIGATORIOS = [
+  ['cnpj', 'CNPJ'],
+  ['ie', 'Inscrição Estadual'],
+  ['razaoSocial', 'Razão Social'],
+  ['nomeAbrev', 'Nome Abreviado'],
+  ['logradouro', 'Logradouro'],
+  ['numero', 'Nº'],
+  ['bairro', 'Bairro'],
+  ['cep', 'CEP'],
+  ['municipio', 'Município'],
+  ['estado', 'Estado'],
+  ['telefone', 'Telefone'],
+  ['fin_email', 'E-mail'],
+  ['resp_vendas', 'Responsável de Vendas'],
+];
+
+const VAZIO = {
+  cnpj: '',
+  ie: '',
+  razaoSocial: '',
+  nomeFantasia: '',
+  nomeAbrev: '',
+  suframa: '',
+  logradouro: '',
+  numero: '',
+  bairro: '',
+  cep: '',
+  municipio: '',
+  estado: '',
+  complemento: '',
+  telefone: '',
+  cob_logradouro: '',
+  cob_numero: '',
+  cob_bairro: '',
+  cob_cep: '',
+  cob_municipio: '',
+  cob_estado: '',
+  cob_complemento: '',
+  cob_telefone: '',
+  ent_logradouro: '',
+  ent_numero: '',
+  ent_bairro: '',
+  ent_cep: '',
+  ent_municipio: '',
+  ent_estado: '',
+  ent_complemento: '',
+  ent_telefone: '',
+  fin_nome: '',
+  fin_email: '',
+  email_nf: '',
+  fin_telefone: '',
+  banco: '',
+  agencia: '',
+  conta: '',
+  resp_vendas: '',
+  filial: '',
+  tabela_preco: '',
+  edi: '',
+  frete: '',
+  limite_credito: '',
+  prazo_pagamento: '',
+  forma_pagamento: '',
+  forn1: '',
+  forn2: '',
+  forn3: '',
+};
+
 export function FichaCadastralModal({ clienteInicial, onClose }) {
-  const { notify } = useToast();
+  const { notify, confirm } = useToast();
   const seed = clienteInicial || {};
   const [form, setForm] = useState({
+    ...VAZIO,
     cnpj: seed.cnpj || '',
     ie: seed.ie || '',
-    suframa: '',
     razaoSocial: seed.razaoSocial || '',
     nomeFantasia: seed.nomeFantasia || '',
     nomeAbrev: (seed.nomeFantasia || seed.razaoSocial || '').slice(0, 12),
     logradouro: seed.endereco || '',
-    numero: '',
-    complemento: '',
-    bairro: '',
     municipio: seed.cidade || '',
     estado: seed.uf || '',
     cep: seed.cep || '',
     telefone: seed.telefone || '',
-    // entrega / cobrança começam vazios (usuário copia se quiser)
-    ent_logradouro: '',
-    ent_numero: '',
-    ent_complemento: '',
-    ent_bairro: '',
-    ent_municipio: '',
-    ent_estado: '',
-    ent_cep: '',
-    ent_telefone: '',
-    cob_logradouro: '',
-    cob_numero: '',
-    cob_complemento: '',
-    cob_bairro: '',
-    cob_municipio: '',
-    cob_estado: '',
-    cob_cep: '',
-    cob_telefone: '',
     fin_nome: seed.contato || '',
-    fin_telefone: '',
     fin_email: seed.email || '',
-    email_nf: '',
-    banco: '',
-    agencia: '',
-    conta: '',
-    forn1: '',
-    forn1_tel: '',
-    forn1_email: '',
-    forn2: '',
-    forn2_tel: '',
-    forn2_email: '',
-    forn3: '',
-    forn3_tel: '',
-    forn3_email: '',
-    resp_vendas: '',
-    cod_resp_vendas: '',
-    rede: seed.rede || '',
-    edi: '',
-    tabela_preco: '',
-    limite_credito: '',
-    prazo_pagamento: '',
   });
   const [busy, setBusy] = useState(false);
 
   const up = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // O código sai de um VLOOKUP dentro da planilha; aqui é só espelho, para o
+  // usuário conferir que escolheu o nome certo antes de gerar.
+  const codBanco = BANCOS.find((b) => b.nome === form.banco)?.codigo || '';
+  const codRep =
+    REPRESENTANTES.find((r) => r.nome === form.resp_vendas)?.codigo || '';
+
+  const tabelaInvalida =
+    form.tabela_preco !== '' && !TABELAS_PRECO.includes(form.tabela_preco);
+
   const copiarEndereco = () => {
     setForm((f) => ({
       ...f,
-      ent_logradouro: f.logradouro,
-      ent_numero: f.numero,
-      ent_complemento: f.complemento,
-      ent_bairro: f.bairro,
-      ent_municipio: f.municipio,
-      ent_estado: f.estado,
-      ent_cep: f.cep,
-      ent_telefone: f.telefone,
       cob_logradouro: f.logradouro,
       cob_numero: f.numero,
-      cob_complemento: f.complemento,
       cob_bairro: f.bairro,
+      cob_cep: f.cep,
       cob_municipio: f.municipio,
       cob_estado: f.estado,
-      cob_cep: f.cep,
+      cob_complemento: f.complemento,
       cob_telefone: f.telefone,
+      ent_logradouro: f.logradouro,
+      ent_numero: f.numero,
+      ent_bairro: f.bairro,
+      ent_cep: f.cep,
+      ent_municipio: f.municipio,
+      ent_estado: f.estado,
+      ent_complemento: f.complemento,
+      ent_telefone: f.telefone,
     }));
   };
 
   const gerar = async () => {
-    if (!form.razaoSocial.trim()) {
-      notify('Preencha ao menos a Razão Social.', { type: 'error' });
+    if (tabelaInvalida) {
+      notify('A Tabela de Preço precisa ser um item da lista.', {
+        type: 'error',
+      });
       return;
+    }
+    const faltando = OBRIGATORIOS.filter(([k]) => !form[k].trim()).map(
+      ([, rotulo]) => rotulo
+    );
+    if (faltando.length) {
+      const ok = await confirm(
+        `A Verde Campo pede estes campos: ${faltando.join(', ')}. Gerar assim mesmo?`,
+        { confirmText: 'Gerar assim mesmo', cancelText: 'Voltar e preencher' }
+      );
+      if (!ok) return;
     }
     setBusy(true);
     try {
-      const blob = await gerarFichaCadastro(form);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const nome = (form.nomeFantasia || form.razaoSocial)
-        .replace(/[^a-zA-Z0-9]/g, '_')
-        .slice(0, 30);
-      a.href = url;
-      a.download = `Ficha_Cadastro_${nome}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await exportarFichaCadastro(form);
     } catch {
       notify('Erro ao gerar a ficha. Tente novamente.', { type: 'error' });
     }
     setBusy(false);
   };
 
+  const gerarLegada = async () => {
+    setBusy(true);
+    try {
+      const nome =
+        normalizarTexto(form.nomeFantasia || form.razaoSocial)
+          .replace(/[^A-Z0-9]+/g, '_')
+          .replace(/^_+|_+$/g, '')
+          .slice(0, 30) || 'CLIENTE';
+      // O modelo antigo tinha campos que saíram do novo (Rede, telefone e
+      // e-mail dos fornecedores); esses saem em branco.
+      await exportarFichaLegada(
+        form,
+        `Ficha_Cadastro_${nome}_modelo_antigo.xlsx`
+      );
+    } catch {
+      notify('Erro ao gerar a ficha antiga.', { type: 'error' });
+    }
+    setBusy(false);
+  };
 
   return (
     <Modal
@@ -134,183 +206,197 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
       ariaLabel="Ficha cadastral de cliente"
       className="w-full md:max-w-2xl rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
     >
-        <div className="flex items-center justify-between p-4 border-b border-stone-200">
-          <h3 className="font-semibold text-stone-900">
-            Ficha Cadastral de Cliente
-          </h3>
-          <button onClick={onClose}>
-            <X size={20} />
-          </button>
+      <div className="flex items-center justify-between p-4 border-b border-stone-200">
+        <h3 className="font-semibold text-stone-900">
+          Ficha Cadastral de Cliente
+        </h3>
+        <button onClick={onClose} aria-label="Fechar">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="overflow-y-auto p-4 flex-1">
+        <p className="text-xs text-stone-500 mb-2">
+          Gera o modelo oficial de setembro/2026 (.xlsb), idêntico ao da Verde
+          Campo. Pode digitar normalmente: a ficha sai em letra maiúscula e sem
+          acento, como o modelo exige.
+        </p>
+
+        <Sec>Dados Cadastrais</Sec>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <Field
+            label="CNPJ"
+            value={form.cnpj}
+            onChange={(v) => up('cnpj', v)}
+          />
+          <Field
+            label="Inscrição Estadual"
+            value={form.ie}
+            onChange={(v) => up('ie', v)}
+            placeholder="ou ISENTO"
+          />
+          <Field
+            label="Suframa"
+            value={form.suframa}
+            onChange={(v) => up('suframa', v)}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 mt-2">
+          <Field
+            label="Razão Social"
+            value={form.razaoSocial}
+            onChange={(v) => up('razaoSocial', v)}
+          />
+          <Field
+            label="Nome Fantasia"
+            value={form.nomeFantasia}
+            onChange={(v) => up('nomeFantasia', v)}
+          />
+          <Field
+            label={`Nome Abrev. (${form.nomeAbrev.length}/12)`}
+            value={form.nomeAbrev}
+            onChange={(v) => up('nomeAbrev', v.slice(0, 12))}
+          />
         </div>
 
-        <div className="overflow-y-auto p-4 flex-1">
-          <p className="text-xs text-stone-500 mb-2">
-            Preenche os campos e gera a ficha oficial da Verde Campo, idêntica
-            ao modelo. Campos em branco ficam vazios na ficha.
-          </p>
+        <Sec>Endereço Principal</Sec>
+        <EnderecoFields prefix="" form={form} up={up} />
+        <button
+          onClick={copiarEndereco}
+          className="text-xs mt-2 px-2 py-1 rounded border"
+          style={{ borderColor: VC_GREEN, color: VC_GREEN }}
+        >
+          Copiar p/ cobrança e entrega
+        </button>
 
-          <Sec>Dados Cadastrais</Sec>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            <Field
-              label="CNPJ"
-              value={form.cnpj}
-              onChange={(v) => up('cnpj', v)}
-            />
-            <Field
-              label="Inscrição Estadual"
-              value={form.ie}
-              onChange={(v) => up('ie', v)}
-            />
-            <Field
-              label="Suframa"
-              value={form.suframa}
-              onChange={(v) => up('suframa', v)}
-            />
-          </div>
-          <div className="grid grid-cols-1 gap-2 mt-2">
-            <Field
-              label="Razão Social *"
-              value={form.razaoSocial}
-              onChange={(v) => up('razaoSocial', v)}
-            />
-            <Field
-              label="Nome Fantasia"
-              value={form.nomeFantasia}
-              onChange={(v) => up('nomeFantasia', v)}
-            />
-            <Field
-              label={`Nome Abrev. (${form.nomeAbrev.length}/12)`}
-              value={form.nomeAbrev}
-              onChange={(v) => up('nomeAbrev', v.slice(0, 12))}
-            />
-          </div>
+        <Sec>Endereço Cobrança</Sec>
+        <EnderecoFields prefix="cob_" form={form} up={up} />
 
-          <div className="flex items-center justify-between mt-3">
-            <Sec>Endereço Principal</Sec>
-          </div>
-          <EnderecoFields prefix="" form={form} up={up} />
-          <button
-            onClick={copiarEndereco}
-            className="text-xs mt-2 px-2 py-1 rounded border"
-            style={{ borderColor: VC_GREEN, color: VC_GREEN }}
-          >
-            Copiar p/ entrega e cobrança
-          </button>
+        <Sec>Endereço Entrega</Sec>
+        <EnderecoFields prefix="ent_" form={form} up={up} />
 
-          <Sec>Endereço Entrega</Sec>
-          <EnderecoFields prefix="ent_" form={form} up={up} />
+        <Sec>Dados de Contato</Sec>
+        <div className="grid grid-cols-2 gap-2">
+          <Field
+            label="Financeiro (nome)"
+            value={form.fin_nome}
+            onChange={(v) => up('fin_nome', v)}
+          />
+          <Field
+            label="Telefone"
+            value={form.fin_telefone}
+            onChange={(v) => up('fin_telefone', v)}
+          />
+          <Field
+            label="E-mail"
+            value={form.fin_email}
+            onChange={(v) => up('fin_email', v)}
+          />
+          <Field
+            label="E-mail Nota Fiscal"
+            value={form.email_nf}
+            onChange={(v) => up('email_nf', v)}
+          />
+        </div>
 
-          <Sec>Endereço Cobrança</Sec>
-          <EnderecoFields prefix="cob_" form={form} up={up} />
-
-          <Sec>Dados de Contato</Sec>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            <Field
-              label="Financeiro (nome)"
-              value={form.fin_nome}
-              onChange={(v) => up('fin_nome', v)}
-            />
-            <Field
-              label="Telefone"
-              value={form.fin_telefone}
-              onChange={(v) => up('fin_telefone', v)}
-            />
-            <Field
-              label="E-mail"
-              value={form.fin_email}
-              onChange={(v) => up('fin_email', v)}
-            />
-          </div>
-          <div className="mt-2">
-            <Field
-              label="E-mail Nota Fiscal"
-              value={form.email_nf}
-              onChange={(v) => up('email_nf', v)}
-            />
-          </div>
-
-          <Sec>Dados Bancários</Sec>
-          <div className="grid grid-cols-3 gap-2">
-            <Field
-              label="Banco"
+        <Sec>Dados Bancários</Sec>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div className="col-span-2 md:col-span-1">
+            <Select
+              label={`Banco${codBanco ? ` (cód. ${codBanco})` : ''}`}
               value={form.banco}
               onChange={(v) => up('banco', v)}
-            />
-            <Field
-              label="Agência"
-              value={form.agencia}
-              onChange={(v) => up('agencia', v)}
-            />
-            <Field
-              label="Conta Corrente"
-              value={form.conta}
-              onChange={(v) => up('conta', v)}
+              options={BANCOS.map((b) => b.nome)}
             />
           </div>
+          <Field
+            label="Agência"
+            value={form.agencia}
+            onChange={(v) => up('agencia', v)}
+          />
+          <Field
+            label="Conta Corrente"
+            value={form.conta}
+            onChange={(v) => up('conta', v)}
+          />
+        </div>
 
-          <Sec>Referências Comerciais</Sec>
-          {[1, 2, 3].map((n) => (
-            <div key={n} className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
-              <Field
-                label={`Fornecedor ${n}`}
-                value={form[`forn${n}`]}
-                onChange={(v) => up(`forn${n}`, v)}
-              />
-              <Field
-                label="Telefone"
-                value={form[`forn${n}_tel`]}
-                onChange={(v) => up(`forn${n}_tel`, v)}
-              />
-              <Field
-                label="E-mail"
-                value={form[`forn${n}_email`]}
-                onChange={(v) => up(`forn${n}_email`, v)}
-              />
-            </div>
-          ))}
-
-          <Sec>Dados Área de Vendas</Sec>
-          <div className="grid grid-cols-2 gap-2">
-            <Field
-              label="Responsável de Vendas"
-              value={form.resp_vendas}
-              onChange={(v) => up('resp_vendas', v)}
-            />
-            <Field
-              label="Cód. Responsável"
-              value={form.cod_resp_vendas}
-              onChange={(v) => up('cod_resp_vendas', v)}
-            />
-            <Field
-              label="Rede"
-              value={form.rede}
-              onChange={(v) => up('rede', v)}
-            />
-            <Field
+        <Sec>Dados Área de Vendas</Sec>
+        <div className="grid grid-cols-2 gap-2">
+          <Select
+            label={`Responsável de Vendas${codRep ? ` (cód. ${codRep})` : ''}`}
+            value={form.resp_vendas}
+            onChange={(v) => up('resp_vendas', v)}
+            options={REPRESENTANTES.map((r) => r.nome)}
+          />
+          <Select
+            label="É Filial?"
+            value={form.filial}
+            onChange={(v) => up('filial', v)}
+            options={['S', 'N']}
+          />
+          <div className="col-span-2">
+            <Combo
               label="Tabela de Preço"
               value={form.tabela_preco}
               onChange={(v) => up('tabela_preco', v)}
+              options={TABELAS_PRECO}
+              invalido={tabelaInvalida}
             />
+          </div>
+          <Select
+            label="EDI"
+            value={form.edi}
+            onChange={(v) => up('edi', v)}
+            options={OPCOES_EDI}
+          />
+          <Select
+            label="Modalidade de Frete"
+            value={form.frete}
+            onChange={(v) => up('frete', v)}
+            options={MODALIDADES_FRETE}
+          />
+          <Select
+            label="Forma de Pagamento"
+            value={form.forma_pagamento}
+            onChange={(v) => up('forma_pagamento', v)}
+            options={FORMAS_PAGAMENTO}
+          />
+          <Field
+            label="Prazo de Pagamento (dias)"
+            value={form.prazo_pagamento}
+            onChange={(v) => up('prazo_pagamento', v)}
+            placeholder="ex.: 28D"
+          />
+          <div className="col-span-2">
             <Field
-              label="Limite Crédito Solicitado"
+              label="Limite de Crédito Solicitado"
               value={form.limite_credito}
               onChange={(v) => up('limite_credito', v)}
             />
-            <Field
-              label="Prazo de Pagamento (dias)"
-              value={form.prazo_pagamento}
-              onChange={(v) => up('prazo_pagamento', v)}
-            />
-          </div>
-
-          <div className="mt-4 text-[11px] text-stone-500 bg-stone-50 border border-stone-200 rounded-lg p-2">
-            Os campos de checkbox (Frete CIF/FOB, Forma de Pagamento) e o bloco
-            de "Preenchimento Interno" ficam como no original para a Verde Campo
-            preencher.
           </div>
         </div>
 
-        <div className="flex gap-2 p-4 border-t border-stone-200">
+        <Sec>Referências Comerciais</Sec>
+        <div className="grid grid-cols-1 gap-2">
+          {[1, 2, 3].map((n) => (
+            <Field
+              key={n}
+              label={`Fornecedor ${n}`}
+              value={form[`forn${n}`]}
+              onChange={(v) => up(`forn${n}`, v)}
+            />
+          ))}
+        </div>
+
+        <div className="mt-4 text-[11px] text-stone-500 bg-stone-50 border border-stone-200 rounded-lg p-2">
+          O bloco de preenchimento interno da Verde Campo e os códigos de banco
+          e representante são resolvidos pela própria planilha ao abrir.
+        </div>
+      </div>
+
+      <div className="p-4 border-t border-stone-200">
+        <div className="flex gap-2">
           <button
             onClick={onClose}
             className="px-3 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg"
@@ -337,6 +423,32 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
             {busy ? 'Gerando...' : 'Gerar Ficha'}
           </button>
         </div>
+        <details className="mt-2">
+          <summary className="text-[11px] text-stone-500 cursor-pointer">
+            Precisa do modelo antigo (.xlsx)?
+          </summary>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={gerarLegada}
+              disabled={busy}
+              className="px-3 py-1.5 text-xs font-medium text-stone-700 border border-stone-300 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <FileDown size={13} />
+              Gerar no modelo antigo
+            </button>
+            <button
+              onClick={baixarFichaLegadaEmBranco}
+              className="px-3 py-1.5 text-xs font-medium text-stone-600 border border-stone-300 rounded-lg"
+            >
+              Antigo em branco
+            </button>
+          </div>
+          <p className="text-[11px] text-stone-500 mt-1">
+            O modelo antigo tinha telefone e e-mail dos fornecedores e o campo
+            Rede, que saíram do novo — esses vão em branco.
+          </p>
+        </details>
+      </div>
     </Modal>
   );
 }
@@ -374,6 +486,11 @@ function EnderecoFields({ prefix, form, up }) {
           onChange={(v) => up(`${prefix}bairro`, v)}
         />
         <Field
+          label="CEP"
+          value={form[`${prefix}cep`]}
+          onChange={(v) => up(`${prefix}cep`, v)}
+        />
+        <Field
           label="Município"
           value={form[`${prefix}municipio`]}
           onChange={(v) => up(`${prefix}municipio`, v)}
@@ -382,11 +499,6 @@ function EnderecoFields({ prefix, form, up }) {
           label="Estado"
           value={form[`${prefix}estado`]}
           onChange={(v) => up(`${prefix}estado`, v)}
-        />
-        <Field
-          label="CEP"
-          value={form[`${prefix}cep`]}
-          onChange={(v) => up(`${prefix}cep`, v)}
         />
       </div>
       <div className="mt-2">
