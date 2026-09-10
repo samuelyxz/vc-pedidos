@@ -1,11 +1,17 @@
-import { useState } from 'react';
-import { Download, X, RefreshCw, FileDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Download, X, RefreshCw, FileDown, RotateCcw } from 'lucide-react';
 import { VC_GREEN } from '../lib/constants.js';
 import {
   exportarFichaCadastro,
   baixarFichaEmBranco,
   normalizarTexto,
 } from '../lib/ficha.js';
+import {
+  lerRascunho,
+  salvarRascunho,
+  limparRascunho,
+  rotuloRascunho,
+} from '../lib/fichaRascunho.js';
 import {
   exportarFichaLegada,
   baixarFichaLegadaEmBranco,
@@ -101,10 +107,9 @@ const VAZIO = {
   forn3: '',
 };
 
-export function FichaCadastralModal({ clienteInicial, onClose }) {
-  const { notify, confirm } = useToast();
-  const seed = clienteInicial || {};
-  const [form, setForm] = useState({
+/** O que dá para aproveitar do cliente já cadastrado. */
+function doCliente(seed) {
+  return {
     ...VAZIO,
     cnpj: seed.cnpj || '',
     ie: seed.ie || '',
@@ -118,8 +123,32 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
     telefone: seed.telefone || '',
     fin_nome: seed.contato || '',
     fin_email: seed.email || '',
-  });
+  };
+}
+
+export function FichaCadastralModal({ clienteInicial, onClose }) {
+  const { notify, confirm } = useToast();
+  const [inicial] = useState(() => doCliente(clienteInicial || {}));
+  const [form, setForm] = useState(inicial);
   const [busy, setBusy] = useState(false);
+  const [rascunho, setRascunho] = useState(null);
+
+  // "Alterado" = tem trabalho a perder. É o que decide se vale salvar rascunho
+  // e se fechar precisa perguntar.
+  const alterado = JSON.stringify(form) !== JSON.stringify(inicial);
+
+  // Guarda o preenchimento a cada mudança, para clicar fora sem querer, fechar
+  // a aba ou o navegador travar não custarem o formulário inteiro.
+  useEffect(() => {
+    if (alterado) salvarRascunho(form);
+  }, [form, alterado]);
+
+  useEffect(() => {
+    (async () => {
+      const r = await lerRascunho();
+      if (r && rotuloRascunho(r.form)) setRascunho(r);
+    })();
+  }, []);
 
   const up = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -174,10 +203,38 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
     setBusy(true);
     try {
       await exportarFichaCadastro(form);
+      // ficha na mão: o rascunho cumpriu o papel dele
+      await limparRascunho();
     } catch {
       notify('Erro ao gerar a ficha. Tente novamente.', { type: 'error' });
     }
     setBusy(false);
+  };
+
+  // Clicar fora, ESC e o X passam por aqui: com o formulário mexido, fechar
+  // sem querer era perder tudo.
+  const fechar = async () => {
+    if (!alterado) {
+      onClose();
+      return;
+    }
+    const ok = await confirm(
+      'Fechar a ficha? O preenchimento fica guardado e você pode continuar depois.',
+      { confirmText: 'Fechar sem terminar', cancelText: 'Continuar preenchendo' }
+    );
+    if (ok) onClose();
+  };
+
+  const retomarRascunho = () => {
+    // Sobre VAZIO de propósito: um rascunho gravado por uma versão anterior
+    // pode não ter todos os campos, e campo faltando quebraria a tela.
+    setForm({ ...VAZIO, ...rascunho.form });
+    setRascunho(null);
+  };
+
+  const descartarRascunho = async () => {
+    setRascunho(null);
+    await limparRascunho();
   };
 
   const gerarLegada = async () => {
@@ -202,7 +259,7 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
 
   return (
     <Modal
-      onClose={onClose}
+      onClose={fechar}
       ariaLabel="Ficha cadastral de cliente"
       className="w-full md:max-w-2xl rounded-t-2xl md:rounded-xl max-h-[95vh] overflow-hidden flex flex-col"
     >
@@ -210,12 +267,45 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
         <h3 className="font-semibold text-stone-900">
           Ficha Cadastral de Cliente
         </h3>
-        <button onClick={onClose} aria-label="Fechar">
+        <button onClick={fechar} aria-label="Fechar">
           <X size={20} />
         </button>
       </div>
 
       <div className="overflow-y-auto p-4 flex-1">
+        {rascunho && !alterado && (
+          <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+            <div className="flex items-start gap-2">
+              <RotateCcw
+                size={15}
+                className="text-amber-700 mt-0.5 flex-shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-amber-900">
+                  Você tem uma ficha de{' '}
+                  <strong>{rotuloRascunho(rascunho.form)}</strong> que ficou
+                  pela metade.
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={retomarRascunho}
+                    className="px-2.5 py-1 text-xs font-semibold text-white rounded"
+                    style={{ backgroundColor: VC_GREEN }}
+                  >
+                    Continuar de onde parei
+                  </button>
+                  <button
+                    onClick={descartarRascunho}
+                    className="px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-300 rounded"
+                  >
+                    Descartar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <p className="text-xs text-stone-500 mb-2">
           Gera o modelo oficial de setembro/2026 (.xlsb), idêntico ao da Verde
           Campo. Pode digitar normalmente: a ficha sai em letra maiúscula e sem
@@ -336,7 +426,7 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
             options={['S', 'N']}
           />
           <div className="col-span-2">
-            <Combo
+            <Combo
               label="Tabela de Preço"
               value={form.tabela_preco}
               onChange={(v) => up('tabela_preco', v)}
@@ -398,7 +488,7 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
       <div className="p-4 border-t border-stone-200">
         <div className="flex gap-2">
           <button
-            onClick={onClose}
+            onClick={fechar}
             className="px-3 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg"
           >
             Fechar

@@ -11,6 +11,17 @@ const FOCUSABLE =
 export function Modal({ onClose, children, className = '', ariaLabel }) {
   const panelRef = useRef(null);
   const restoreFocusRef = useRef(null);
+  // Onde o clique começou. Arrastar para selecionar texto de dentro do painel
+  // termina o clique no backdrop — sem isso, selecionar texto fechava o modal.
+  const inicioNoFundoRef = useRef(false);
+
+  // Guardado em ref para o efeito de montagem não depender da identidade da
+  // função: quem chama costuma recriá-la a cada render, e reexecutar o efeito
+  // devolveria o foco para o primeiro campo a cada tecla digitada.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     const token = {};
@@ -26,7 +37,7 @@ export function Modal({ onClose, children, className = '', ariaLabel }) {
       if (!isTop()) return;
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -59,12 +70,19 @@ export function Modal({ onClose, children, className = '', ariaLabel }) {
       const el = restoreFocusRef.current;
       if (el && typeof el.focus === 'function') el.focus();
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div
       className="fixed inset-0 z-40 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4"
-      onClick={onClose}
+      onMouseDown={(e) => {
+        inicioNoFundoRef.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && inicioNoFundoRef.current) {
+          onClose?.();
+        }
+      }}
     >
       <div
         ref={panelRef}
@@ -73,7 +91,6 @@ export function Modal({ onClose, children, className = '', ariaLabel }) {
         aria-label={ariaLabel}
         tabIndex={-1}
         className={`bg-white outline-none ${className}`}
-        onClick={(e) => e.stopPropagation()}
       >
         {children}
       </div>

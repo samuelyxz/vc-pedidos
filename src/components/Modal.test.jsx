@@ -35,11 +35,30 @@ describe('<Modal />', () => {
         <button>dentro</button>
       </Modal>
     );
-    fireEvent.click(screen.getByText('dentro'));
+    const dentro = screen.getByText('dentro');
+    fireEvent.mouseDown(dentro);
+    fireEvent.click(dentro);
     expect(onClose).not.toHaveBeenCalled();
+
     // backdrop é o pai do dialog
-    fireEvent.click(screen.getByRole('dialog').parentElement);
+    const fundo = screen.getByRole('dialog').parentElement;
+    fireEvent.mouseDown(fundo);
+    fireEvent.click(fundo);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('não fecha quando o clique começa dentro e termina no backdrop', () => {
+    // é o que acontece ao arrastar para selecionar o texto de um campo:
+    // o navegador entrega o click no backdrop, e o modal fechava sozinho
+    const onClose = vi.fn();
+    render(
+      <Modal onClose={onClose}>
+        <input defaultValue="texto do campo" />
+      </Modal>
+    );
+    fireEvent.mouseDown(screen.getByDisplayValue('texto do campo'));
+    fireEvent.click(screen.getByRole('dialog').parentElement);
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('move o foco pra dentro ao abrir', () => {
