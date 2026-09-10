@@ -5,9 +5,12 @@ import {
   X,
   ChevronRight,
   Gift,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { VC_GREEN, VC_GREEN_BG } from '../lib/constants.js';
 import { formatBRL, formatDate } from '../lib/format.js';
+import { resumirPorMes, resumirTudo } from '../lib/resumo.js';
 import { findProduct } from '../lib/catalog.js';
 import { calcItem } from '../lib/calc.js';
 import { exportPedidoStyled } from '../lib/exportPedido.js';
@@ -33,46 +36,25 @@ export function PedidosView({ pedidos, setPedidos, vendedor, onGerarBonificacao 
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {pedidos.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setViewing(p)}
-              className="w-full bg-white rounded-xl border border-stone-200 p-4 text-left hover:border-stone-300 transition-colors flex items-center justify-between gap-3"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  {p.numero && (
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded"
-                      style={{ backgroundColor: VC_GREEN_BG, color: VC_GREEN }}
-                    >
-                      Nº {p.numero}
-                    </span>
-                  )}
-                  <span className="text-xs text-stone-500">
-                    {formatDate(p.data)}
-                  </span>
+        <>
+          <ResumoGeral resumo={resumirTudo(pedidos)} />
+          <div className="space-y-6">
+            {resumirPorMes(pedidos).map((mes) => (
+              <section key={mes.chave}>
+                <CabecalhoMes mes={mes} />
+                <div className="space-y-2">
+                  {mes.pedidos.map((p) => (
+                    <LinhaPedido
+                      key={p.id}
+                      pedido={p}
+                      onClick={() => setViewing(p)}
+                    />
+                  ))}
                 </div>
-                <div className="font-medium text-sm text-stone-900 truncate">
-                  {p.clienteSnapshot?.razaoSocial || 'Cliente removido'}
-                </div>
-                <div className="text-xs text-stone-500 mt-0.5">
-                  {p.items.length} produtos
-                </div>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className="font-bold text-sm" style={{ color: VC_GREEN }}>
-                  {formatBRL(p.total)}
-                </div>
-                <ChevronRight
-                  size={16}
-                  className="text-stone-400 ml-auto mt-1"
-                />
-              </div>
-            </button>
-          ))}
-        </div>
+              </section>
+            ))}
+          </div>
+        </>
       )}
 
       {viewing && (
@@ -98,6 +80,98 @@ export function PedidosView({ pedidos, setPedidos, vendedor, onGerarBonificacao 
         />
       )}
     </div>
+  );
+}
+
+// Números do histórico inteiro, para não precisar somar pedido a pedido.
+function ResumoGeral({ resumo }) {
+  return (
+    <div
+      className="rounded-xl p-4 mb-4 border"
+      style={{ backgroundColor: VC_GREEN_BG, borderColor: VC_GREEN }}
+    >
+      <div className="text-xs font-medium" style={{ color: VC_GREEN }}>
+        Total em pedidos
+      </div>
+      <div
+        className="text-2xl font-bold mt-0.5"
+        style={{ color: VC_GREEN }}
+      >
+        {formatBRL(resumo.total)}
+      </div>
+      <div className="text-xs text-stone-600 mt-1">
+        {resumo.qtd} {resumo.qtd === 1 ? 'pedido' : 'pedidos'} · média{' '}
+        {formatBRL(resumo.media)}
+      </div>
+    </div>
+  );
+}
+
+function CabecalhoMes({ mes }) {
+  const subiu = mes.variacao !== null && mes.variacao >= 0;
+  const Icone = subiu ? TrendingUp : TrendingDown;
+  return (
+    <div className="flex items-end justify-between gap-3 mb-2 px-1">
+      <div className="min-w-0">
+        <h3 className="font-semibold text-sm text-stone-900">{mes.rotulo}</h3>
+        <p className="text-xs text-stone-500">
+          {mes.qtd} {mes.qtd === 1 ? 'pedido' : 'pedidos'} · média{' '}
+          {formatBRL(mes.media)}
+        </p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <div className="font-bold text-sm text-stone-900">
+          {formatBRL(mes.total)}
+        </div>
+        {mes.variacao !== null && (
+          <div
+            className={`text-xs flex items-center justify-end gap-1 mt-0.5 ${
+              subiu ? 'text-emerald-700' : 'text-red-600'
+            }`}
+            title="Comparado ao mês anterior com pedidos"
+          >
+            <Icone size={12} />
+            {subiu ? '+' : ''}
+            {Math.round(mes.variacao * 100)}%
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LinhaPedido({ pedido: p, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full bg-white rounded-xl border border-stone-200 p-4 text-left hover:border-stone-300 transition-colors flex items-center justify-between gap-3"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          {p.numero && (
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded"
+              style={{ backgroundColor: VC_GREEN_BG, color: VC_GREEN }}
+            >
+              Nº {p.numero}
+            </span>
+          )}
+          <span className="text-xs text-stone-500">{formatDate(p.data)}</span>
+        </div>
+        <div className="font-medium text-sm text-stone-900 truncate">
+          {p.clienteSnapshot?.razaoSocial || 'Cliente removido'}
+        </div>
+        <div className="text-xs text-stone-500 mt-0.5">
+          {p.items.length} produtos
+        </div>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <div className="font-bold text-sm" style={{ color: VC_GREEN }}>
+          {formatBRL(p.total)}
+        </div>
+        <ChevronRight size={16} className="text-stone-400 ml-auto mt-1" />
+      </div>
+    </button>
   );
 }
 
