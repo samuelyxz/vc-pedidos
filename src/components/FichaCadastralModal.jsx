@@ -12,6 +12,7 @@ import {
   limparRascunho,
   rotuloRascunho,
 } from '../lib/fichaRascunho.js';
+import { salvarFicha } from '../lib/fichasSalvas.js';
 import {
   exportarFichaLegada,
   baixarFichaLegadaEmBranco,
@@ -126,9 +127,20 @@ function doCliente(seed) {
   };
 }
 
-export function FichaCadastralModal({ clienteInicial, onClose }) {
+export function FichaCadastralModal({
+  clienteInicial = null,
+  fichaInicial = null,
+  fichaId = null,
+  onClose,
+}) {
   const { notify, confirm } = useToast();
-  const [inicial] = useState(() => doCliente(clienteInicial || {}));
+  // `fichaInicial` vem de uma ficha já salva (revisão ou cópia para filial);
+  // sem ela, o que dá para aproveitar é o cadastro do cliente.
+  const [inicial] = useState(() =>
+    fichaInicial
+      ? { ...VAZIO, ...fichaInicial }
+      : doCliente(clienteInicial || {})
+  );
   const [form, setForm] = useState(inicial);
   const [busy, setBusy] = useState(false);
   const [rascunho, setRascunho] = useState(null);
@@ -144,11 +156,13 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
   }, [form, alterado]);
 
   useEffect(() => {
+    // Abrindo uma ficha salva, oferecer um rascunho de outra só confundiria.
+    if (fichaInicial) return;
     (async () => {
       const r = await lerRascunho();
       if (r && rotuloRascunho(r.form)) setRascunho(r);
     })();
-  }, []);
+  }, [fichaInicial]);
 
   const up = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -203,8 +217,11 @@ export function FichaCadastralModal({ clienteInicial, onClose }) {
     setBusy(true);
     try {
       await exportarFichaCadastro(form);
+      // fica no histórico para conferir depois e aproveitar em outra filial
+      await salvarFicha(form, fichaId);
       // ficha na mão: o rascunho cumpriu o papel dele
       await limparRascunho();
+      notify('Ficha gerada e guardada no histórico.');
     } catch {
       notify('Erro ao gerar a ficha. Tente novamente.', { type: 'error' });
     }

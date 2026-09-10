@@ -12,6 +12,7 @@ export const LOCAL_KEYS = [
   'bonificacoes',
   'catalogo',
   'catalogo_meta',
+  'fichas',
 ];
 
 // Tudo que um backup reconhece. `product_images` vive no IndexedDB, não no

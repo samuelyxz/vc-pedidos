@@ -185,11 +185,28 @@ export function baixarFichaEmBranco() {
   );
 }
 
-/** @param {Record<string, string>} form @returns {string} */
-export function nomeArquivoFicha(form) {
-  const base = normalizarTexto(form.nomeFantasia || form.razaoSocial)
+/** @param {string} valor @param {number} max */
+function pedaco(valor, max) {
+  return normalizarTexto(valor)
     .replace(/[^A-Z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '')
-    .slice(0, 30);
-  return `Ficha_Cadastro_${base || 'CLIENTE'}.xlsb`;
+    .slice(0, max);
+}
+
+/**
+ * Matriz e filiais são fichas do mesmo cliente: só o nome da empresa faria as
+ * três nascerem com o mesmo arquivo, e o navegador numeraria (1), (2). Por
+ * isso entra também o município e, quando existe, o nome abreviado — que a
+ * Verde Campo exige ser único por cadastro.
+ *
+ * @param {Record<string, string>} form
+ * @returns {string}
+ */
+export function nomeArquivoFicha(form) {
+  const partes = [
+    pedaco(form.nomeFantasia || form.razaoSocial, 28) || 'CLIENTE',
+    pedaco(form.municipio, 20),
+    pedaco(form.nomeAbrev, 12),
+  ].filter(Boolean);
+  return `Ficha_Cadastro_${[...new Set(partes)].join('_')}.xlsb`;
 }

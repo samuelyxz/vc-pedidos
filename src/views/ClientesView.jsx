@@ -10,6 +10,7 @@ import { uid } from '../lib/format.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { Field } from '../components/Field.jsx';
 import { Modal } from '../components/Modal.jsx';
+import { FichasSalvasModal } from '../components/FichasSalvasModal.jsx';
 
 // A ficha carrega o modelo oficial embutido e as listas da Verde Campo — uns
 // 75 kB que só fazem sentido quando alguém abre a ficha de fato.
@@ -23,21 +24,45 @@ const FichaCadastralModal = lazy(() =>
 export function ClientesView({ clientes, setClientes }) {
   const { confirm } = useToast();
   const [editing, setEditing] = useState(null);
+  const [verFichas, setVerFichas] = useState(false);
+  // { form, id? } — ficha salva aberta para conferir ou cópia para filial
+  const [fichaAberta, setFichaAberta] = useState(null);
+
+  // Abrir uma ficha esconde a lista, e fechá-la traz a lista de volta: são dois
+  // modais grandes, empilhar os dois deixaria a tela confusa.
+  const abrirFicha = (ficha) => {
+    setVerFichas(false);
+    setFichaAberta(ficha);
+  };
+  const fecharFicha = () => {
+    setFichaAberta(null);
+    setVerFichas(true);
+  };
 
   return (
     <div className="px-4 md:px-6 py-4 md:py-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between gap-2 mb-4">
         <h2 className="text-xl font-semibold text-stone-900 hidden md:block">
           Clientes
         </h2>
-        <button
-          onClick={() => setEditing({})}
-          className="ml-auto inline-flex items-center gap-1.5 text-white text-sm font-medium px-3 py-2 rounded-lg"
-          style={{ backgroundColor: VC_GREEN }}
-        >
-          <Plus size={16} />
-          Novo Cliente
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => setVerFichas(true)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border"
+            style={{ borderColor: VC_GREEN, color: VC_GREEN }}
+          >
+            <FileText size={16} />
+            Fichas
+          </button>
+          <button
+            onClick={() => setEditing({})}
+            className="inline-flex items-center gap-1.5 text-white text-sm font-medium px-3 py-2 rounded-lg"
+            style={{ backgroundColor: VC_GREEN }}
+          >
+            <Plus size={16} />
+            Novo Cliente
+          </button>
+        </div>
       </div>
 
       {clientes.length === 0 ? (
@@ -94,6 +119,23 @@ export function ClientesView({ clientes, setClientes }) {
           }}
           onCancel={() => setEditing(null)}
         />
+      )}
+
+      {verFichas && (
+        <FichasSalvasModal
+          onAbrir={abrirFicha}
+          onClose={() => setVerFichas(false)}
+        />
+      )}
+
+      {fichaAberta && (
+        <Suspense fallback={null}>
+          <FichaCadastralModal
+            fichaInicial={fichaAberta.form}
+            fichaId={fichaAberta.id}
+            onClose={fecharFicha}
+          />
+        </Suspense>
       )}
     </div>
   );
