@@ -4,6 +4,7 @@ import {
   Plus,
   X,
   FileText,
+  Layers,
 } from 'lucide-react';
 import { VC_GREEN } from '../lib/constants.js';
 import { uid } from '../lib/format.js';
@@ -11,6 +12,13 @@ import { useToast } from '../state/ToastContext.jsx';
 import { Field } from '../components/Field.jsx';
 import { Modal } from '../components/Modal.jsx';
 import { FichasSalvasModal } from '../components/FichasSalvasModal.jsx';
+
+// Outro modelo .xlsb embutido; só vale carregar quando abrirem a tela.
+const FichaMassaModal = lazy(() =>
+  import('../components/FichaMassaModal.jsx').then((m) => ({
+    default: m.FichaMassaModal,
+  }))
+);
 
 // A ficha carrega o modelo oficial embutido e as listas da Verde Campo — uns
 // 75 kB que só fazem sentido quando alguém abre a ficha de fato.
@@ -25,6 +33,7 @@ export function ClientesView({ clientes, setClientes }) {
   const { confirm } = useToast();
   const [editing, setEditing] = useState(null);
   const [verFichas, setVerFichas] = useState(false);
+  const [verMassa, setVerMassa] = useState(false);
   // { form, id? } — ficha salva aberta para conferir ou cópia para filial
   const [fichaAberta, setFichaAberta] = useState(null);
 
@@ -53,6 +62,14 @@ export function ClientesView({ clientes, setClientes }) {
           >
             <FileText size={16} />
             Fichas
+          </button>
+          <button
+            onClick={() => setVerMassa(true)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border"
+            style={{ borderColor: VC_GREEN, color: VC_GREEN }}
+          >
+            <Layers size={16} />
+            Em massa
           </button>
           <button
             onClick={() => setEditing({})}
@@ -119,6 +136,12 @@ export function ClientesView({ clientes, setClientes }) {
           }}
           onCancel={() => setEditing(null)}
         />
+      )}
+
+      {verMassa && (
+        <Suspense fallback={null}>
+          <FichaMassaModal onClose={() => setVerMassa(false)} />
+        </Suspense>
       )}
 
       {verFichas && (
