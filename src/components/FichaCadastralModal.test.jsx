@@ -1,8 +1,16 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
 import { FichaCadastralModal } from './FichaCadastralModal.jsx';
 import { ToastProvider } from '../state/ToastContext.jsx';
 import { BANCOS, REPRESENTANTES, TABELAS_PRECO } from '../data/fichaBase.js';
+import { listarFichas } from '../lib/fichasSalvas.js';
+import { store } from '../lib/storage.js';
 
 afterEach(cleanup);
 
@@ -62,5 +70,42 @@ describe('<FichaCadastralModal />', () => {
     const campo = screen.getByLabelText(/Nome Abrev/);
     fireEvent.change(campo, { target: { value: 'NOME MUITO COMPRIDO' } });
     expect(campo.value).toBe('NOME MUITO C');
+  });
+});
+
+describe('gerar guarda no histórico', () => {
+  beforeEach(async () => {
+    await store.delete('fichas');
+    await store.delete('ficha_rascunho');
+  });
+
+  it('a ficha gerada entra no histórico com os dados preenchidos', async () => {
+    render(
+      <ToastProvider>
+        <FichaCadastralModal
+          clienteInicial={{ razaoSocial: 'Mercado Do Teste Ltda' }}
+          onClose={() => {}}
+        />
+      </ToastProvider>
+    );
+    fireEvent.change(screen.getByLabelText('CNPJ'), {
+      target: { value: '11.111.111/0001-11' },
+    });
+    fireEvent.change(screen.getByLabelText('Banco'), {
+      target: { value: 'SICREDI' },
+    });
+
+    fireEvent.click(screen.getByText('Gerar Ficha'));
+    // faltam obrigatórios; seguimos assim mesmo
+    fireEvent.click(await screen.findByText('Gerar assim mesmo'));
+
+    await waitFor(async () => expect(await listarFichas()).toHaveLength(1));
+    const [f] = await listarFichas();
+    expect(f.form.razaoSocial).toBe('Mercado Do Teste Ltda');
+    expect(f.form.cnpj).toBe('11.111.111/0001-11');
+    expect(f.form.banco).toBe('SICREDI');
+
+    // e o rascunho é limpo, já que a ficha saiu
+    expect(await store.get('ficha_rascunho', null)).toBeNull();
   });
 });

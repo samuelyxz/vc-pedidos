@@ -186,10 +186,31 @@ describe('normalizarTexto', () => {
 });
 
 describe('nomeArquivoFicha', () => {
-  it('usa o fantasia, sem acento nem símbolo', () => {
-    expect(nomeArquivoFicha({ nomeFantasia: 'Mercado São João' })).toBe(
-      'Ficha_Cadastro_MERCADO_SAO_JOAO.xlsb'
-    );
+  it('junta nome, município e nome abreviado', () => {
+    expect(
+      nomeArquivoFicha({
+        nomeFantasia: 'Mercado São João',
+        municipio: 'Presidente Prudente',
+        nomeAbrev: 'MERC S JOAO',
+      })
+    ).toBe('Ficha_Cadastro_MERCADO_SAO_JOAO_PRESIDENTE_PRUDENTE_MERC_S_JOAO.xlsb');
+  });
+
+  it('matriz e filiais do mesmo cliente saem com arquivos diferentes', () => {
+    // era o problema real: as três nasciam iguais e o navegador numerava (1)
+    const base = { nomeFantasia: 'Mercado São João' };
+    const nomes = [
+      nomeArquivoFicha({ ...base, municipio: 'Presidente Prudente', nomeAbrev: 'MSJ MATRIZ' }),
+      nomeArquivoFicha({ ...base, municipio: 'Alvares Machado', nomeAbrev: 'MSJ ALVARES' }),
+      nomeArquivoFicha({ ...base, municipio: 'Presidente Prudente', nomeAbrev: 'MSJ FIL 2' }),
+    ];
+    expect(new Set(nomes).size).toBe(3);
+  });
+
+  it('não repete pedaço quando o nome abreviado é o próprio nome', () => {
+    expect(
+      nomeArquivoFicha({ nomeFantasia: 'ABC', municipio: '', nomeAbrev: 'ABC' })
+    ).toBe('Ficha_Cadastro_ABC.xlsb');
   });
 
   it('cai na razão social e tem um nome de reserva', () => {
