@@ -79,3 +79,72 @@ describe('<FichaMassaModal />', () => {
     ).toBeTruthy();
   });
 });
+
+describe('avisos de cadastro repetido', () => {
+  const marcarTodas = () =>
+    screen.getAllByRole('checkbox').forEach((c) => fireEvent.click(c));
+
+  it('barra nome abreviado repetido entre as unidades', async () => {
+    // foi o que aconteceu de verdade: matriz e filiais com o mesmo abreviado
+    await salvarFicha({
+      ...cliente('Mercado Triunfo Matriz', 'Prudente'),
+      nomeAbrev: 'M TRIUNFO',
+      cnpj: '65.715.049/0001-76',
+    });
+    await salvarFicha({
+      ...cliente('Mercado Triunfo Filial 01', 'Prudente'),
+      nomeAbrev: 'M TRIUNFO',
+      cnpj: '65.715.049/0003-38',
+    });
+    abrir();
+    await screen.findByText('Mercado Triunfo Matriz');
+    marcarTodas();
+    fireEvent.click(screen.getByText(/Gerar com 2 clientes/));
+
+    expect(
+      await screen.findByText(/nome abreviado "M TRIUNFO" em 2 clientes/)
+    ).toBeTruthy();
+  });
+
+  it('barra CNPJ repetido', async () => {
+    await salvarFicha({
+      ...cliente('Mercado Um', 'Prudente'),
+      nomeAbrev: 'MERC UM',
+      cnpj: '11.111.111/0001-11',
+    });
+    await salvarFicha({
+      ...cliente('Mercado Dois', 'Prudente'),
+      nomeAbrev: 'MERC DOIS',
+      cnpj: '11.111.111/0001-11',
+    });
+    abrir();
+    await screen.findByText('Mercado Um');
+    marcarTodas();
+    fireEvent.click(screen.getByText(/Gerar com 2 clientes/));
+
+    expect(
+      await screen.findByText(/CNPJ "11.111.111\/0001-11" em 2 clientes/)
+    ).toBeTruthy();
+  });
+
+  it('não reclama quando cada unidade tem os seus', async () => {
+    await salvarFicha({
+      ...cliente('Mercado Um', 'Prudente'),
+      nomeAbrev: 'MERC UM',
+      cnpj: '11.111.111/0001-11',
+    });
+    await salvarFicha({
+      ...cliente('Mercado Dois', 'Prudente'),
+      nomeAbrev: 'MERC DOIS',
+      cnpj: '22.222.222/0001-22',
+    });
+    abrir();
+    await screen.findByText('Mercado Um');
+    marcarTodas();
+    fireEvent.click(screen.getByText(/Gerar com 2 clientes/));
+
+    // o aviso que aparece é o de "menos de 3", não o de repetido
+    expect(await screen.findByText(/3 ou mais clientes/)).toBeTruthy();
+    expect(screen.queryByText(/recusa cadastro repetido/)).toBeNull();
+  });
+});

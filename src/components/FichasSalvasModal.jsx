@@ -1,13 +1,23 @@
-import { useEffect, useState } from 'react';
-import { X, FileText, Copy, Pencil, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  X,
+  FileText,
+  Copy,
+  Pencil,
+  Trash2,
+  Upload,
+  RefreshCw,
+} from 'lucide-react';
 import { VC_GREEN, VC_GREEN_BG } from '../lib/constants.js';
 import { formatDate } from '../lib/format.js';
 import {
   listarFichas,
   excluirFicha,
+  salvarFicha,
   paraFilial,
   rotuloFicha,
 } from '../lib/fichasSalvas.js';
+import { lerFichaDeArquivo } from '../lib/fichaImport.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { Modal } from './Modal.jsx';
 
@@ -18,12 +28,43 @@ function ondeFica(form) {
 }
 
 export function FichasSalvasModal({ onAbrir, onClose }) {
-  const { confirm } = useToast();
+  const { confirm, notify } = useToast();
   const [fichas, setFichas] = useState(null);
+  const [importando, setImportando] = useState(false);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     (async () => setFichas(await listarFichas()))();
   }, []);
+
+  // Fichas geradas antes de existir o histórico (ou em outro computador) não
+  // estão aqui. Em vez de redigitar, lemos o .xlsb de volta.
+  const importar = async (e) => {
+    const arquivos = [...(e.target.files || [])];
+    e.target.value = '';
+    if (!arquivos.length) return;
+
+    setImportando(true);
+    const erros = [];
+    let importadas = 0;
+    for (const arquivo of arquivos) {
+      try {
+        await salvarFicha(await lerFichaDeArquivo(arquivo));
+        importadas++;
+      } catch (err) {
+        erros.push(`${arquivo.name}: ${err.message}`);
+      }
+    }
+    setFichas(await listarFichas());
+    setImportando(false);
+
+    if (importadas) {
+      notify(
+        `${importadas} ${importadas === 1 ? 'ficha importada' : 'fichas importadas'}.`
+      );
+    }
+    for (const erro of erros) notify(erro, { type: 'error', duration: 7000 });
+  };
 
   const apagar = async (ficha) => {
     const ok = await confirm(
@@ -56,7 +97,8 @@ export function FichasSalvasModal({ onAbrir, onClose }) {
               Nenhuma ficha gerada ainda.
             </p>
             <p className="text-xs text-stone-400 mt-1">
-              Toda ficha que você gerar fica guardada aqui.
+              Toda ficha que você gerar fica guardada aqui. Já tem fichas
+              baixadas? Use &quot;Importar ficha já gerada&quot; abaixo.
             </p>
           </div>
         ) : (
@@ -130,12 +172,35 @@ export function FichasSalvasModal({ onAbrir, onClose }) {
           e tabela, e limpa CNPJ, inscrição estadual, endereço e nome
           abreviado — que mudam em cada unidade.
         </p>
-        <button
-          onClick={onClose}
-          className="w-full px-3 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg"
-        >
-          Fechar
-        </button>
+        <input
+          type="file"
+          accept=".xlsb,application/vnd.ms-excel.sheet.binary.macroEnabled.12"
+          multiple
+          ref={inputRef}
+          onChange={importar}
+          style={{ display: 'none' }}
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="px-3 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg"
+          >
+            Fechar
+          </button>
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={importando}
+            className="flex-1 px-3 py-2 text-sm font-medium rounded-lg border flex items-center justify-center gap-1.5 disabled:opacity-50"
+            style={{ borderColor: VC_GREEN, color: VC_GREEN }}
+          >
+            {importando ? (
+              <RefreshCw size={14} className="animate-spin" />
+            ) : (
+              <Upload size={14} />
+            )}
+            {importando ? 'Importando...' : 'Importar ficha já gerada'}
+          </button>
+        </div>
       </div>
     </Modal>
   );
