@@ -13,6 +13,35 @@ import { Modal } from './Modal.jsx';
 const ondeFica = (form) =>
   [form.municipio, form.estado].filter(Boolean).join(' - ');
 
+/**
+ * Aponta valores que se repetem entre os clientes escolhidos. O nome abreviado
+ * não pode repetir cadastro existente, e dois CNPJs iguais são a mesma empresa
+ * entrando duas vezes — nos dois casos a ficha volta.
+ *
+ * @param {Record<string, string>[]} forms
+ * @returns {string[]}
+ */
+function repetidos(forms) {
+  const avisos = [];
+  for (const [campo, rotulo] of [
+    ['nomeAbrev', 'nome abreviado'],
+    ['cnpj', 'CNPJ'],
+  ]) {
+    const vistos = new Map();
+    for (const f of forms) {
+      const v = (f[campo] || '').trim().toUpperCase();
+      if (!v) continue;
+      vistos.set(v, (vistos.get(v) || 0) + 1);
+    }
+    for (const [valor, quantas] of vistos) {
+      if (quantas > 1) {
+        avisos.push(`${rotulo} "${valor}" em ${quantas} clientes`);
+      }
+    }
+  }
+  return avisos;
+}
+
 export function FichaMassaModal({ onClose }) {
   const { notify, confirm } = useToast();
   const [fichas, setFichas] = useState(null);
@@ -40,6 +69,14 @@ export function FichaMassaModal({ onClose }) {
     if (!selecionadas.length) {
       notify('Marque pelo menos um cliente.', { type: 'error' });
       return;
+    }
+    const repetidas = repetidos(selecionadas.map((f) => f.form));
+    if (repetidas.length) {
+      const ok = await confirm(
+        `A Verde Campo recusa cadastro repetido: ${repetidas.join('; ')}. Cada unidade precisa do seu próprio nome abreviado e CNPJ. Gerar assim mesmo?`,
+        { confirmText: 'Gerar assim mesmo', cancelText: 'Voltar e corrigir' }
+      );
+      if (!ok) return;
     }
     if (selecionadas.length < 3) {
       const ok = await confirm(
@@ -85,6 +122,8 @@ export function FichaMassaModal({ onClose }) {
             </p>
             <p className="text-xs text-stone-400 mt-1">
               A ficha em massa aproveita as fichas individuais que você já fez.
+              Se você gerou antes do histórico existir, traga os arquivos em
+              Clientes &gt; Fichas &gt; Importar ficha já gerada.
             </p>
           </div>
         ) : (
