@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { FICHA_CELLS } from './ficha.js';
+import { FICHA_CELLS } from './fichaCampos.js';
 
 /** Aba de preenchimento do modelo individual. */
 const ABA = 'FICHA INDIVIDUAL';
