@@ -169,7 +169,7 @@ export function mergeProducts(newList, oldList) {
       sap: padrao?.sap || '',
       ean: padrao?.ean || '',
       secao: padrao?.secao || p.linha || 'NOVOS',
-      status: 'NOVO',
+      status: padrao?.status || 'NOVO',
       unidade: padrao?.unidade || 'CX',
       peso_kg: padrao?.peso_kg || 0,
       imagem: padrao?.imagem || '',

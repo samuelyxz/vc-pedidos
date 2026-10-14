@@ -54,7 +54,8 @@ export function CatalogUpdateCard() {
     try {
       const parsed = await parsePriceTable(file);
       const merged = mergeProducts(parsed, products);
-      const novos = merged.filter((p) => p.status === 'NOVO');
+      const atuais = new Set(products.map((p) => p.codigo));
+      const novos = merged.filter((p) => !atuais.has(p.codigo));
       const removidos = products.filter(
         (c) => !merged.find((p) => p.codigo === c.codigo)
       );

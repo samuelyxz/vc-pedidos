@@ -10,6 +10,7 @@ import { formatBRL } from '../lib/format.js';
 import { calcOrder } from '../lib/calc.js';
 import { useCatalog } from '../state/CatalogContext.jsx';
 import { ProductImage } from '../components/ProductImage.jsx';
+import { StatusBadge } from '../components/StatusBadge.jsx';
 import { ProductModal } from '../components/ProductModal.jsx';
 import { CartPanel } from '../components/CartPanel.jsx';
 
@@ -201,19 +202,7 @@ export function NovoPedidoView({
                     <span className="font-medium text-stone-900 text-sm leading-tight">
                       {p.nome}
                     </span>
-                    {p.status && (
-                      <span
-                        className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
-                          p.status.toLowerCase().includes('lan')
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-stone-200 text-stone-600'
-                        }`}
-                      >
-                        {p.status.toLowerCase().includes('lan')
-                          ? 'LANÇ.'
-                          : 'DESCONT.'}
-                      </span>
-                    )}
+                    <StatusBadge status={p.status} />
                   </div>
                   <div className="text-xs text-stone-500 mt-0.5 flex flex-wrap gap-x-2">
                     <span>{p.codigo}</span>
