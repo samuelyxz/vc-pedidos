@@ -1,7 +1,12 @@
 import { useState, useMemo, useRef } from 'react';
 import { Upload, RefreshCw, FileCheck2, AlertCircle } from 'lucide-react';
 import { VC_GREEN, VC_GREEN_BG } from '../lib/constants.js';
-import { parsePriceTable, mergeProducts } from '../lib/catalog.js';
+import {
+  parsePriceTable,
+  mergeProducts,
+  juntarTabela,
+} from '../lib/catalog.js';
+import { DEFAULT_PRODUCTS } from '../data/products.js';
 import { useCatalog } from '../state/CatalogContext.jsx';
 
 export function CatalogUpdateCard() {
@@ -15,6 +20,8 @@ export function CatalogUpdateCard() {
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
   const [confirmingReset, setConfirmingReset] = useState(false);
+  // 'juntar' mantém o que o arquivo não trouxe; 'substituir' apaga
+  const [modo, setModo] = useState('juntar');
   const [feedback, setFeedback] = useState('');
   const fileInputRef = useRef(null);
 
@@ -59,8 +66,10 @@ export function CatalogUpdateCard() {
         );
       });
       const semAlteracao = merged.length - novos.length - atualizados.length;
+      setModo('juntar');
       setPreview({
         merged,
+        juntado: juntarTabela(merged, products),
         novos,
         removidos,
         atualizados,
@@ -75,7 +84,11 @@ export function CatalogUpdateCard() {
 
   const handleConfirm = async () => {
     if (!preview) return;
-    await onUpdate(preview.merged, preview.filename);
+    const lista =
+      preview.removidos.length && modo === 'juntar'
+        ? preview.juntado
+        : preview.merged;
+    await onUpdate(lista, preview.filename);
     setPreview(null);
     setError('');
   };
@@ -167,7 +180,7 @@ export function CatalogUpdateCard() {
               <div className="flex flex-col gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="text-xs text-amber-900">
                   <strong>Tem certeza?</strong> A tabela atual será substituída
-                  pelos 89 produtos da tabela embutida (com EAN, SAP, peso e
+                  pelos {DEFAULT_PRODUCTS.length} produtos da tabela embutida (com EAN, SAP, peso e
                   imagens originais).
                 </div>
                 <div className="flex gap-2">
@@ -218,7 +231,9 @@ export function CatalogUpdateCard() {
                 Total de produtos
               </span>
               <span className="font-bold" style={{ color: VC_GREEN }}>
-                {preview.merged.length}
+                {preview.removidos.length && modo === 'juntar'
+                  ? preview.juntado.length
+                  : preview.merged.length}
               </span>
             </div>
             {preview.novos.length > 0 && (
@@ -241,7 +256,15 @@ export function CatalogUpdateCard() {
                 <span className="font-semibold">{preview.semAlteracao}</span>
               </div>
             )}
-            {preview.removidos.length > 0 && (
+            {preview.removidos.length > 0 && modo === 'juntar' && (
+              <div className="flex justify-between text-stone-600">
+                <span>• Fora do arquivo, continuam como estão</span>
+                <span className="font-semibold">
+                  {preview.removidos.length}
+                </span>
+              </div>
+            )}
+            {preview.removidos.length > 0 && modo === 'substituir' && (
               <div className="flex justify-between text-red-700">
                 <span>❌ Não estão na nova tabela</span>
                 <span className="font-semibold">
@@ -252,23 +275,47 @@ export function CatalogUpdateCard() {
           </div>
 
           {preview.removidos.length > 0 && (
-            <div className="text-[10px] text-stone-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
-              <div className="flex items-start gap-1">
+            <fieldset className="text-xs text-stone-700 bg-amber-50 border border-amber-200 rounded-lg p-2 space-y-1.5">
+              <legend className="sr-only">Como aplicar a tabela</legend>
+              <div className="flex items-start gap-1 text-[11px] text-stone-600">
                 <AlertCircle
-                  size={11}
+                  size={12}
                   className="mt-0.5 flex-shrink-0 text-amber-700"
                 />
-                <div>
-                  <strong>Atenção:</strong> {preview.removidos.length} produto
+                <span>
+                  O arquivo não traz {preview.removidos.length} produto
                   {preview.removidos.length > 1 ? 's' : ''} que existe
-                  {preview.removidos.length > 1 ? 'm' : ''} hoje no app não está
-                  {preview.removidos.length > 1 ? 'ão' : ''} na nova tabela e
-                  ser
-                  {preview.removidos.length > 1 ? 'ão removidos' : 'á removido'}
-                  . Verifique se está correto.
-                </div>
+                  {preview.removidos.length > 1 ? 'm' : ''} hoje no app.
+                </span>
               </div>
-            </div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="modo-tabela"
+                  checked={modo === 'juntar'}
+                  onChange={() => setModo('juntar')}
+                  className="mt-0.5"
+                />
+                <span>
+                  <strong>Juntar à tabela atual</strong> — só acrescenta e
+                  atualiza o que veio no arquivo
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="modo-tabela"
+                  checked={modo === 'substituir'}
+                  onChange={() => setModo('substituir')}
+                  className="mt-0.5"
+                />
+                <span>
+                  <strong>Substituir a tabela inteira</strong> — remove{' '}
+                  {preview.removidos.length > 1 ? 'os' : 'o'}{' '}
+                  {preview.removidos.length} que não {preview.removidos.length > 1 ? 'vieram' : 'veio'}
+                </span>
+              </label>
+            </fieldset>
           )}
 
           {preview.novos.length > 0 && (

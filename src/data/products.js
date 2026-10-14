@@ -1595,4 +1595,21 @@ export const DEFAULT_PRODUCTS = [
     imagem:
       'https://admin.verdecampo.com.br/wp-content/uploads/2025/10/VCNW_Sobremesa-1-1.png',
   },
+  {
+    codigo: '80.878.0013',
+    sap: '',
+    ean: '7898205925937',
+    categoria: 'SOBREMESA',
+    subcategoria: 'PROTEICA',
+    linha: 'PROTEICA',
+    secao: 'SOBREMESA (CAIXA COM 12 UNIDADES)',
+    status: 'LANÇAMENTO',
+    nome: 'SOBREMESA PROTEICA DOCE DE LEITE 130G',
+    descricao_original: 'SOBREMESA PROTEICA DOCE DE LEITE 130G VC CX 12',
+    un_cx: 12,
+    preco_st: 84.53,
+    unidade: 'CX',
+    peso_kg: 0,
+    imagem: '',
+  },
 ];
