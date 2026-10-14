@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import {
   parsePriceTable,
   mergeProducts,
+  juntarTabela,
   backfillFromDefaults,
 } from './catalog.js';
 import { DEFAULT_PRODUCTS } from '../data/products.js';
@@ -71,6 +72,62 @@ describe('mergeProducts', () => {
     );
     expect(m.status).toBe('NOVO');
     expect(m.sap).toBe('');
+  });
+
+  it('produto novo que já está na tabela embutida herda a seção dela', () => {
+    // a tabela da empresa traz linha "PROTEICA"; usada como seção, o produto
+    // sairia no bloco "OUTROS" da planilha de pedido
+    const [m] = mergeProducts(
+      [
+        {
+          codigo: '80.878.0013',
+          nome: 'SOBREMESA PROTEICA DOCE DE LEITE 130G',
+          preco_st: 90,
+          un_cx: 12,
+          linha: 'PROTEICA',
+        },
+      ],
+      [],
+    );
+    expect(m).toMatchObject({
+      status: 'NOVO',
+      secao: 'SOBREMESA (CAIXA COM 12 UNIDADES)',
+      ean: '7898205925937',
+      preco_st: 90, // preço continua vindo do arquivo
+    });
+  });
+});
+
+describe('juntarTabela', () => {
+  const atual = [
+    { codigo: 'A', nome: 'A', preco_st: 10, un_cx: 12 },
+    { codigo: 'B', nome: 'B', preco_st: 20, un_cx: 12 },
+  ];
+
+  it('tabela com um só lançamento acrescenta sem apagar o resto', async () => {
+    const file = fakeXlsx([
+      {
+        Código: '80.878.0013',
+        Descrição: 'SOBREMESA PROTEICA DOCE DE LEITE 130G VC CX 12',
+        'Preço com ST': 84.53,
+      },
+    ]);
+    const merged = mergeProducts(await parsePriceTable(file), atual);
+    const out = juntarTabela(merged, atual);
+    expect(out.map((p) => p.codigo)).toEqual(['A', 'B', '80.878.0013']);
+    expect(out[2]).toMatchObject({ preco_st: 84.53, un_cx: 12, status: 'NOVO' });
+  });
+
+  it('atualiza no lugar o que o arquivo trouxe e mantém o resto', () => {
+    const merged = mergeProducts(
+      [{ codigo: 'B', nome: 'B', preco_st: 25, un_cx: 12 }],
+      atual,
+    );
+    const out = juntarTabela(merged, atual);
+    expect(out.map((p) => [p.codigo, p.preco_st])).toEqual([
+      ['A', 10],
+      ['B', 25],
+    ]);
   });
 });
 

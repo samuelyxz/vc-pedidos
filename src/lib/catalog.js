@@ -157,18 +157,44 @@ export function mergeProducts(newList, oldList) {
         imagem: old.imagem || '',
       };
     }
+    // Novo para o catálogo salvo, mas talvez já cadastrado na tabela embutida:
+    // aproveita a classificação dela. A seção decide em que bloco o produto sai
+    // na planilha de pedido; sem ela ele cairia em "OUTROS".
+    const padrao = DEFAULT_PRODUCTS.find((d) => d.codigo === p.codigo);
     return {
       ...p,
-      categoria: p.categoria || inferCategoria(p.nome),
-      sap: '',
-      ean: '',
-      secao: p.linha || 'NOVOS',
+      categoria: padrao?.categoria || p.categoria || inferCategoria(p.nome),
+      subcategoria: padrao?.subcategoria || p.subcategoria,
+      linha: padrao?.linha || p.linha,
+      sap: padrao?.sap || '',
+      ean: padrao?.ean || '',
+      secao: padrao?.secao || p.linha || 'NOVOS',
       status: 'NOVO',
-      unidade: 'CX',
-      peso_kg: 0,
-      imagem: '',
+      unidade: padrao?.unidade || 'CX',
+      peso_kg: padrao?.peso_kg || 0,
+      imagem: padrao?.imagem || '',
     };
   });
+}
+
+/**
+ * Junta uma tabela parcial à atual: atualiza o que veio no arquivo, acrescenta
+ * os novos no fim e mantém intocado o que o arquivo não trouxe.
+ *
+ * A empresa às vezes manda uma tabela com um só lançamento; substituir por ela
+ * apagaria todo o resto do catálogo.
+ *
+ * @param {Product[]} merged resultado de `mergeProducts` para o arquivo
+ * @param {Product[]} atual catálogo em uso
+ * @returns {Product[]}
+ */
+export function juntarTabela(merged, atual) {
+  const doArquivo = new Map(merged.map((p) => [p.codigo, p]));
+  const codigosAtuais = new Set(atual.map((p) => p.codigo));
+  return [
+    ...atual.map((p) => doArquivo.get(p.codigo) ?? p),
+    ...merged.filter((p) => !codigosAtuais.has(p.codigo)),
+  ];
 }
 
 // Catálogos salvos por uploads antigos ficam congelados no estado em que a
