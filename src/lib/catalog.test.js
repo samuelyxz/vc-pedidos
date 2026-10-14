@@ -90,7 +90,7 @@ describe('mergeProducts', () => {
       [],
     );
     expect(m).toMatchObject({
-      status: 'NOVO',
+      status: 'LANÇAMENTO',
       secao: 'SOBREMESA (CAIXA COM 12 UNIDADES)',
       ean: '7898205925937',
       preco_st: 90, // preço continua vindo do arquivo
@@ -115,7 +115,7 @@ describe('juntarTabela', () => {
     const merged = mergeProducts(await parsePriceTable(file), atual);
     const out = juntarTabela(merged, atual);
     expect(out.map((p) => p.codigo)).toEqual(['A', 'B', '80.878.0013']);
-    expect(out[2]).toMatchObject({ preco_st: 84.53, un_cx: 12, status: 'NOVO' });
+    expect(out[2]).toMatchObject({ preco_st: 84.53, un_cx: 12, status: 'LANÇAMENTO' });
   });
 
   it('atualiza no lugar o que o arquivo trouxe e mantém o resto', () => {

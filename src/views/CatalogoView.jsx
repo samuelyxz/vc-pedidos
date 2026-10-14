@@ -6,6 +6,7 @@ import { compressImage } from '../lib/images.js';
 import { useCatalog } from '../state/CatalogContext.jsx';
 import { useToast } from '../state/ToastContext.jsx';
 import { ProductImage } from '../components/ProductImage.jsx';
+import { StatusBadge } from '../components/StatusBadge.jsx';
 
 // ============== CATÁLOGO ==============
 export function CatalogoView() {
@@ -150,21 +151,7 @@ function CatalogoItem({ product: p }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-medium text-stone-900 text-sm">{p.nome}</span>
-          {p.status && (
-            <span
-              className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
-                p.status.toLowerCase().includes('lan')
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-stone-200 text-stone-600'
-              }`}
-            >
-              {p.status.toLowerCase().includes('lan')
-                ? 'LANÇ.'
-                : p.status.toLowerCase().includes('nov')
-                ? 'NOVO'
-                : 'DESCONT.'}
-            </span>
-          )}
+          <StatusBadge status={p.status} />
           {hasCustomImg && (
             <button
               onClick={handleRemoveImg}
