@@ -1,4 +1,4 @@
-import { Trash2, Download } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { VC_GREEN } from '../lib/constants.js';
 import { formatBRL } from '../lib/format.js';
 import { findProduct } from '../lib/catalog.js';
@@ -6,14 +6,16 @@ import { calcItem, calcOrder } from '../lib/calc.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { ProductImage } from './ProductImage.jsx';
 
+// Lista dos produtos escolhidos, com totais e observações. Serve ao pedido e à
+// sugestão de compra: quem usa decide o título e os botões do rodapé.
 export function CartPanel({
   pedido,
   setPedido,
-  cliente,
   onRemove,
   onEdit,
-  onFinalizar,
-  onExportar,
+  acoes,
+  titulo = 'Pedido em montagem',
+  textoLimpar = 'Limpar o pedido atual?',
   embedded = false,
 }) {
   const { confirm } = useToast();
@@ -28,12 +30,12 @@ export function CartPanel({
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-stone-900 text-sm">
-          Pedido em montagem
+          {titulo}
         </h3>
         {pedido.items.length > 0 && (
           <button
             onClick={async () => {
-              if (await confirm('Limpar o pedido atual?', { danger: true }))
+              if (await confirm(textoLimpar, { danger: true }))
                 setPedido({ ...pedido, items: [] });
             }}
             className="text-xs text-stone-500 hover:text-red-600"
@@ -127,22 +129,7 @@ export function CartPanel({
             />
           </div>
 
-          <button
-            onClick={onFinalizar}
-            disabled={!cliente || pedido.items.length === 0}
-            className="w-full text-white font-semibold text-sm py-2.5 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: VC_GREEN }}
-          >
-            <Download size={16} />
-            Finalizar e Baixar
-          </button>
-          <button
-            onClick={onExportar}
-            disabled={!cliente || pedido.items.length === 0}
-            className="w-full mt-2 text-xs text-stone-600 hover:text-stone-900 py-1.5 disabled:opacity-50"
-          >
-            Baixar sem finalizar
-          </button>
+          {acoes}
         </>
       )}
     </div>

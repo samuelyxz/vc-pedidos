@@ -9,7 +9,15 @@ import { useToast } from '../state/ToastContext.jsx';
 import { ProductImage } from './ProductImage.jsx';
 import { Modal } from './Modal.jsx';
 
-export function ProductModal({ product, existing, onSave, onCancel, onRemove }) {
+export function ProductModal({
+  product,
+  existing,
+  onSave,
+  onCancel,
+  onRemove,
+  // numa sugestão de compra tudo já é sugestão: o destaque não se aplica
+  permitirSugestao = true,
+}) {
   const { customImages, setProductImage, removeProductImage } = useCatalog();
   const { notify } = useToast();
   const [caixas, setCaixas] = useState(existing?.caixas || 1);
@@ -173,15 +181,17 @@ export function ProductModal({ product, existing, onSave, onCancel, onRemove }) 
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-stone-700">
-            <input
-              type="checkbox"
-              checked={isExtra}
-              onChange={(e) => setIsExtra(e.target.checked)}
-              className="rounded"
-            />
-            Marcar como sugestão (sai destacado na planilha)
-          </label>
+          {permitirSugestao && (
+            <label className="flex items-center gap-2 text-sm text-stone-700">
+              <input
+                type="checkbox"
+                checked={isExtra}
+                onChange={(e) => setIsExtra(e.target.checked)}
+                className="rounded"
+              />
+              Marcar como sugestão (sai destacado na planilha)
+            </label>
+          )}
 
           <div>
             <label className="text-xs font-medium text-stone-600 mb-1 block">

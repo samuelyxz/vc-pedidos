@@ -99,3 +99,51 @@ describe('buildPedidoWorkbook', () => {
     expect(flat).toContain('Entregar pela manhã');
   });
 });
+
+describe('buildPedidoWorkbook — sugestão de compra', () => {
+  async function sugestao() {
+    const wb = await buildPedidoWorkbook(pedido, null, vendedor, {
+      sugestao: true,
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const reloaded = new ExcelJS.Workbook();
+    await reloaded.xlsx.load(buf);
+    const ws = reloaded.getWorksheet('Sugestão');
+    const flat = [];
+    ws.eachRow((row) => row.eachCell((c) => flat.push(c.text)));
+    return { ws, texto: flat.join(' | ') };
+  }
+
+  it('sai com título de sugestão, sem número de pedido', async () => {
+    const { ws, texto } = await sugestao();
+    expect(String(ws.getCell('A1').value)).toBe('SUGESTÃO DE COMPRA');
+    expect(texto).not.toContain('39200');
+  });
+
+  it('não tem dados de cliente, e sim os do vendedor', async () => {
+    const { texto } = await sugestao();
+    expect(texto).toContain('DADOS DO VENDEDOR');
+    expect(texto).toContain('Samuel');
+    expect(texto).toContain('s@x.com');
+    expect(texto).not.toContain('Razão Social');
+    expect(texto).not.toContain('Nº Pedido');
+    expect(texto).not.toContain('Contato');
+  });
+
+  it('mantém produtos, preços e total', async () => {
+    const { ws, texto } = await sugestao();
+    expect(texto).toContain('REQUEIJAO TESTE 180G');
+    let totalCell = null;
+    ws.eachRow((row) =>
+      row.eachCell((c) => {
+        if (c.value === 'TOTAL DA SUGESTÃO') totalCell = row.getCell(11);
+      })
+    );
+    expect(totalCell.value).toBeCloseTo(670);
+  });
+
+  it('não traz a nota de itens sugeridos ao pedido do cliente', async () => {
+    const { texto } = await sugestao();
+    expect(texto).not.toContain('pedido original do cliente');
+  });
+});
