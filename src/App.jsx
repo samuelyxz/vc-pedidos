@@ -6,16 +6,19 @@ import {
   Settings,
   ClipboardList,
   Gift,
+  Lightbulb,
 } from 'lucide-react';
 import { VC_GREEN } from './lib/constants.js';
 import { uid, todayISO } from './lib/format.js';
 import { store } from './lib/storage.js';
 import { calcOrder } from './lib/calc.js';
 import { exportPedidoStyled } from './lib/exportPedido.js';
+import { separarItens } from './lib/sugestoes.js';
 import { useCatalog } from './state/CatalogContext.jsx';
 import { useToast } from './state/ToastContext.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { NovoPedidoView } from './views/NovoPedidoView.jsx';
+import { SugestoesView } from './views/SugestoesView.jsx';
 import { PedidosView } from './views/PedidosView.jsx';
 import { ClientesView } from './views/ClientesView.jsx';
 import { BonificacoesView } from './views/BonificacoesView.jsx';
@@ -25,7 +28,7 @@ import { ConfigView } from './views/ConfigView.jsx';
 // ============== MAIN APP ==============
 export default function App() {
   const { ready: catalogReady } = useCatalog();
-  const { notify } = useToast();
+  const { notify, confirm } = useToast();
   const [tab, setTab] = useState('pedido');
   const [clientes, setClientes] = useState([]);
   const [vendedor, setVendedor] = useState({
@@ -153,6 +156,41 @@ export default function App() {
     );
   };
 
+  // Cliente aceitou a sugestão: os produtos vão para o pedido em montagem e
+  // falta só escolher o cliente.
+  const usarSugestaoNoPedido = async (sugestao) => {
+    const { validos, fora } = separarItens(sugestao.items);
+    if (!validos.length) {
+      notify('Essa sugestão não tem produtos da tabela atual.', {
+        type: 'error',
+      });
+      return;
+    }
+    const n = pedidoAtual.items.length;
+    if (n > 0) {
+      const ok = await confirm(
+        `O pedido em montagem já tem ${n} produto${n > 1 ? 's' : ''}. Trocar pelos da sugestão?`,
+        { confirmText: 'Trocar' }
+      );
+      if (!ok) return;
+    }
+    setPedidoAtual({
+      ...pedidoAtual,
+      items: validos.map((i) => ({ ...i })),
+      obs: pedidoAtual.obs || sugestao.obs || '',
+    });
+    setTab('pedido');
+    notify(
+      fora.length
+        ? `Produtos no pedido. ${
+            fora.length > 1
+              ? `${fora.length} saíram da tabela e ficaram de fora`
+              : '1 saiu da tabela e ficou de fora'
+          }. Escolha o cliente.`
+        : 'Produtos no pedido. Agora é só escolher o cliente.'
+    );
+  };
+
   const gerarBonificacaoDePedido = (pedido) => {
     setBonifSeed({
       clienteId: pedido.clienteSnapshot
@@ -173,6 +211,12 @@ export default function App() {
       label: 'Novo Pedido',
       mobileLabel: 'Pedido',
       icon: ShoppingCart,
+    },
+    {
+      id: 'sugestoes',
+      label: 'Sugestões',
+      mobileLabel: 'Sugestão',
+      icon: Lightbulb,
     },
     {
       id: 'pedidos',
@@ -258,6 +302,12 @@ export default function App() {
               clientes={clientes}
               onFinalizar={finalizarPedido}
               onExportar={apenasExportar}
+            />
+          )}
+          {tab === 'sugestoes' && (
+            <SugestoesView
+              vendedor={vendedor}
+              onUsarNoPedido={usarSugestaoNoPedido}
             />
           )}
           {tab === 'pedidos' && (

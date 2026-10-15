@@ -1,7 +1,7 @@
 import { SECAO_ORDER } from './constants.js';
 import { findProduct } from './catalog.js';
 import { calcItem, calcOrder } from './calc.js';
-import { formatDate, todayISO } from './format.js';
+import { formatDate, todayISO, normalizarNomeArquivo } from './format.js';
 import { downloadBlob } from './download.js';
 import {
   XLSX_MIME,
@@ -54,12 +54,24 @@ function infoRow(ws, label1, val1, label2, val2, centerVal) {
   box(ws, r);
 }
 
-export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
+/**
+ * Monta a planilha do pedido. Com `sugestao`, sai como sugestão de compra para
+ * cliente novo: mesmo visual e mesmos preços, mas sem dados de cliente e de
+ * número de pedido — no lugar entram os contatos do vendedor.
+ */
+export async function buildPedidoWorkbook(
+  pedido,
+  cliente,
+  vendedor,
+  { sugestao = false } = {}
+) {
   const ExcelJS = await loadExcelJS();
   const wb = new ExcelJS.Workbook();
   wb.creator = 'VC Pedidos';
   wb.created = new Date();
-  const ws = wb.addWorksheet('Pedido', { views: [{ showGridLines: false }] });
+  const ws = wb.addWorksheet(sugestao ? 'Sugestão' : 'Pedido', {
+    views: [{ showGridLines: false }],
+  });
   ws.columns = COL_WIDTHS.map((width) => ({ width }));
 
   // Agrupa itens por seção, na ordem do template
@@ -84,7 +96,9 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
 
   banner(
     ws,
-    `PEDIDO DE VENDA${pedido.numero ? ` — Nº ${pedido.numero}` : ''}`,
+    sugestao
+      ? 'SUGESTÃO DE COMPRA'
+      : `PEDIDO DE VENDA${pedido.numero ? ` — Nº ${pedido.numero}` : ''}`,
     C.dark,
     { size: 14, height: 26 }
   );
@@ -92,15 +106,11 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
   spacer(ws);
 
   {
-    const row = ws.addRow([
-      'DADOS DO CLIENTE',
-      '',
-      '',
-      '',
-      '',
-      '',
-      'DADOS DO PEDIDO',
-    ]);
+    const row = ws.addRow(
+      sugestao
+        ? ['DADOS DO VENDEDOR', '', '', '', '', '', 'DADOS DA SUGESTÃO']
+        : ['DADOS DO CLIENTE', '', '', '', '', '', 'DADOS DO PEDIDO']
+    );
     const r = row.number;
     ws.mergeCells(r, 1, r, 6);
     ws.mergeCells(r, 7, r, NCOLS);
@@ -113,31 +123,38 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
     box(ws, r);
   }
 
-  const cidadeUf = cliente?.cidade
-    ? ` — ${cliente.cidade}${cliente.uf ? '/' + cliente.uf : ''}`
-    : '';
-  infoRow(ws, 'Razão Social', cliente?.razaoSocial || '-', 'Data', formatDate(pedido.data), true);
-  infoRow(ws, 'CNPJ', cliente?.cnpj || '-', 'Nº Pedido', pedido.numero || '-', true);
-  infoRow(ws, 'IE', cliente?.ie || '-', 'Vendedor', vendedor?.nome || '-');
-  infoRow(ws, 'Telefone', cliente?.telefone || '-', 'Tel. Vendedor', vendedor?.telefone || '-');
-  infoRow(
-    ws,
-    'Endereço',
-    (cliente?.endereco || '-') + cidadeUf,
-    'E-mail Vend.',
-    vendedor?.email || '-'
-  );
   const nItens = pedido.items.length;
-  infoRow(
-    ws,
-    'Contato',
-    cliente?.contato || '-',
-    'Total Itens',
-    `${nItens} produto${nItens !== 1 ? 's' : ''} · ${totalCaixas} caixa${
-      totalCaixas !== 1 ? 's' : ''
-    }`,
-    true
-  );
+  const plural = (n, s) => `${n} ${s}${n !== 1 ? 's' : ''}`;
+  if (sugestao) {
+    infoRow(ws, 'Vendedor', vendedor?.nome || '-', 'Data', formatDate(pedido.data), true);
+    infoRow(ws, 'Telefone', vendedor?.telefone || '-', 'Produtos', plural(nItens, 'produto'), true);
+    infoRow(ws, 'E-mail', vendedor?.email || '-', 'Caixas', plural(totalCaixas, 'caixa'), true);
+  } else {
+    const cidadeUf = cliente?.cidade
+      ? ` — ${cliente.cidade}${cliente.uf ? '/' + cliente.uf : ''}`
+      : '';
+    infoRow(ws, 'Razão Social', cliente?.razaoSocial || '-', 'Data', formatDate(pedido.data), true);
+    infoRow(ws, 'CNPJ', cliente?.cnpj || '-', 'Nº Pedido', pedido.numero || '-', true);
+    infoRow(ws, 'IE', cliente?.ie || '-', 'Vendedor', vendedor?.nome || '-');
+    infoRow(ws, 'Telefone', cliente?.telefone || '-', 'Tel. Vendedor', vendedor?.telefone || '-');
+    infoRow(
+      ws,
+      'Endereço',
+      (cliente?.endereco || '-') + cidadeUf,
+      'E-mail Vend.',
+      vendedor?.email || '-'
+    );
+    infoRow(
+      ws,
+      'Contato',
+      cliente?.contato || '-',
+      'Total Itens',
+      `${nItens} produto${nItens !== 1 ? 's' : ''} · ${totalCaixas} caixa${
+        totalCaixas !== 1 ? 's' : ''
+      }`,
+      true
+    );
+  }
   spacer(ws);
 
   {
@@ -268,7 +285,7 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
       x.fill = fill(C.dark);
       x.alignment = { horizontal: 'right', vertical: 'middle' };
     }
-    ws.getCell(r, 5).value = 'TOTAL DO PEDIDO';
+    ws.getCell(r, 5).value = sugestao ? 'TOTAL DA SUGESTÃO' : 'TOTAL DO PEDIDO';
     ws.getCell(r, 11).numFmt = BRL_FMT;
     box(ws, r);
     row.height = 20;
@@ -287,7 +304,7 @@ export async function buildPedidoWorkbook(pedido, cliente, vendedor) {
     box(ws, r);
   }
 
-  if (hasExtras) {
+  if (hasExtras && !sugestao) {
     banner(
       ws,
       'Itens destacados em amarelo claro são sugestões adicionadas ao pedido original do cliente.',
@@ -315,4 +332,25 @@ export async function exportPedidoStyled(pedido, cliente, vendedor) {
     .slice(0, 30);
   const numero = pedido.numero || todayISO().replace(/-/g, '');
   downloadBlob(buf, `Pedido_${numero}_${clienteName}.xlsx`, XLSX_MIME);
+}
+
+/**
+ * Baixa a sugestão de compra como planilha, com a data de hoje.
+ * @param {{ nome?: string, items: any[], obs?: string }} sugestao
+ */
+export async function exportSugestao(sugestao, vendedor) {
+  const pedido = {
+    numero: '',
+    data: todayISO(),
+    items: sugestao.items,
+    obs: sugestao.obs || '',
+  };
+  const wb = await buildPedidoWorkbook(pedido, null, vendedor, { sugestao: true });
+  const buf = await wb.xlsx.writeBuffer();
+  const nome = normalizarNomeArquivo(sugestao.nome || '');
+  downloadBlob(
+    buf,
+    `Sugestao_Compra${nome ? `_${nome}` : ''}_${todayISO()}.xlsx`,
+    XLSX_MIME
+  );
 }

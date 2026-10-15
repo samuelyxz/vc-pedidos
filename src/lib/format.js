@@ -25,3 +25,11 @@ export const escapeHtml = (s) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+// Trecho seguro para nome de arquivo: sem acento, só letras, números e "_".
+export const normalizarNomeArquivo = (s, max = 30) =>
+  String(s || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, max);
